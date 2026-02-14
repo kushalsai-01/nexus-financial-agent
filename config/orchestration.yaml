@@ -1,0 +1,135 @@
+graph:
+  name: "nexus_trading_graph"
+  max_parallel: 6
+  timeout_seconds: 300
+
+  nodes:
+    - name: "fetch_data"
+      agents: ["market_data"]
+      parallel: false
+
+    - name: "process_parallel"
+      agents: ["technical", "fundamental", "sentiment", "macro", "event", "quantitative"]
+      parallel: true
+
+    - name: "analyze_parallel"
+      agents: ["bull", "bear"]
+      parallel: true
+      depends_on: ["process_parallel"]
+
+    - name: "coordinate"
+      agents: ["coordinator"]
+      parallel: false
+      depends_on: ["analyze_parallel"]
+
+    - name: "risk_check"
+      agents: ["risk"]
+      parallel: false
+      depends_on: ["coordinate"]
+
+    - name: "execute"
+      agents: ["portfolio", "execution"]
+      parallel: false
+      depends_on: ["risk_check"]
+      condition: "risk_approved"
+
+    - name: "log_decision"
+      agents: []
+      parallel: false
+      depends_on: ["execute"]
+
+  edges:
+    - from: "fetch_data"
+      to: "process_parallel"
+
+    - from: "process_parallel"
+      to: "analyze_parallel"
+
+    - from: "analyze_parallel"
+      to: "coordinate"
+
+    - from: "coordinate"
+      to: "risk_check"
+
+    - from: "risk_check"
+      to: "execute"
+      condition: "risk_assessment.decision == APPROVE"
+
+    - from: "risk_check"
+      to: "log_decision"
+      condition: "risk_assessment.decision == VETO"
+
+    - from: "execute"
+      to: "log_decision"
+
+llm_routing:
+  tiers:
+    cheap:
+      provider: "groq"
+      model: "llama-3.3-70b-versatile"
+      max_tokens: 4096
+      temperature: 0.1
+      timeout: 30
+      use_cases:
+        - "data validation"
+        - "format checking"
+        - "quick classification"
+
+    medium:
+      provider: "openai"
+      model: "gpt-4o"
+      max_tokens: 4096
+      temperature: 0.1
+      timeout: 60
+      use_cases:
+        - "analysis tasks"
+        - "research synthesis"
+        - "risk assessment"
+
+    expensive:
+      provider: "anthropic"
+      model: "claude-sonnet-4-20250514"
+      max_tokens: 8192
+      temperature: 0.3
+      timeout: 90
+      use_cases:
+        - "bull/bear debate"
+        - "final decisions"
+        - "complex reasoning"
+
+memory:
+  decision_memory:
+    max_entries: 10000
+    ttl_days: 90
+
+  vector_memory:
+    collection: "nexus_decisions"
+    embedding_model: "all-MiniLM-L6-v2"
+    similarity_threshold: 0.85
+    max_results: 10
+
+  cache:
+    llm_cache_ttl: 3600
+    llm_cache_max_size: 1000
+    semantic_cache_ttl: 7200
+    semantic_similarity_threshold: 0.92
+
+protocols:
+  mcp:
+    enabled: true
+    tools:
+      - "fetch_price_data"
+      - "fetch_fundamentals"
+      - "fetch_news"
+      - "compute_technicals"
+      - "analyze_sentiment"
+
+  a2a:
+    enabled: true
+    message_types:
+      - "analysis"
+      - "signal"
+      - "risk_alert"
+      - "consensus"
+      - "execution"
+    message_ttl_seconds: 300

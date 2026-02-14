@@ -1,0 +1,159 @@
+research_team:
+  name: "Research Analysts"
+  weight: 1.0
+  agents:
+    - name: "market_data"
+      type: "research"
+      llm_tier: "cheap"
+      timeout: 30
+      description: "Aggregates real-time and historical market data"
+
+    - name: "technical"
+      type: "research"
+      llm_tier: "medium"
+      timeout: 60
+      output:
+        signal: "BUY | SELL | HOLD"
+        strength: "0.0 to 1.0"
+        support_level: "float"
+        resistance_level: "float"
+
+    - name: "fundamental"
+      type: "research"
+      llm_tier: "medium"
+      timeout: 60
+      output:
+        fair_value: "float"
+        upside_pct: "float"
+        downside_pct: "float"
+        quality_score: "0.0 to 1.0"
+
+    - name: "sentiment"
+      type: "research"
+      llm_tier: "medium"
+      timeout: 60
+      output:
+        sentiment: "very_bullish | bullish | neutral | bearish | very_bearish"
+        score: "-1.0 to 1.0"
+
+    - name: "macro"
+      type: "research"
+      llm_tier: "medium"
+      timeout: 60
+      output:
+        macro_outlook: "favorable | neutral | unfavorable"
+        rate_sensitivity: "-1.0 to 1.0"
+
+    - name: "event"
+      type: "research"
+      llm_tier: "cheap"
+      timeout: 45
+      output:
+        net_catalyst_score: "-1.0 to 1.0"
+
+strategy_team:
+  name: "Strategy Analysts"
+  weight: 1.2
+  agents:
+    - name: "quantitative"
+      type: "strategy"
+      llm_tier: "medium"
+      timeout: 60
+      output:
+        alpha_score: "-3.0 to 3.0"
+        factor_breakdown: "momentum, value, quality, volatility, size"
+
+    - name: "rl_agent"
+      type: "strategy"
+      llm_tier: "cheap"
+      timeout: 45
+      output:
+        ml_signal: "BUY | SELL | HOLD"
+        confidence: "0.0 to 1.0"
+        predicted_return: "float"
+
+debate_team:
+  name: "Bull/Bear Debate"
+  weight: 1.5
+  agents:
+    - name: "bull"
+      type: "debate"
+      llm_tier: "expensive"
+      llm_provider: "anthropic"
+      llm_model: "claude-sonnet-4-20250514"
+      temperature: 0.7
+      timeout: 90
+      output:
+        conviction: "1 to 10"
+        position_action: "buy | add | hold"
+        position_size_pct: "float"
+        price_target: "float"
+        catalyst_timeline_days: "int"
+
+    - name: "bear"
+      type: "debate"
+      llm_tier: "expensive"
+      llm_provider: "anthropic"
+      llm_model: "claude-sonnet-4-20250514"
+      temperature: 0.7
+      timeout: 90
+      output:
+        conviction: "1 to 10"
+        action: "sell | reduce | avoid"
+        downside_target: "float"
+
+risk_team:
+  name: "Risk Management"
+  weight: 2.0
+  agents:
+    - name: "risk"
+      type: "risk"
+      llm_tier: "medium"
+      timeout: 60
+      output:
+        decision: "APPROVE | VETO"
+        adjusted_size_pct: "float"
+        risk_score: "0.0 to 1.0"
+
+execution_team:
+  name: "Execution"
+  weight: 1.0
+  agents:
+    - name: "portfolio"
+      type: "execution"
+      llm_tier: "expensive"
+      timeout: 60
+      output:
+        action: "buy | sell | hold | close"
+        size_pct: "float"
+        stop_loss: "float"
+        take_profit: "float"
+        kelly_fraction: "float"
+
+    - name: "execution"
+      type: "execution"
+      llm_tier: "cheap"
+      timeout: 30
+      output:
+        strategy: "VWAP | TWAP | ICEBERG | MARKET"
+        num_slices: "int"
+        expected_slippage_bps: "float"
+
+meta_team:
+  name: "Meta / Coordination"
+  weight: 1.0
+  agents:
+    - name: "coordinator"
+      type: "meta"
+      llm_tier: "medium"
+      timeout: 60
+      output:
+        consensus_reached: "bool"
+        consensus_signal: "BUY | SELL | HOLD"
+        consensus_confidence: "0.0 to 1.0"
+
+consensus:
+  threshold: 0.6
+  min_agents_required: 4
+  veto_agents:
+    - "risk"
