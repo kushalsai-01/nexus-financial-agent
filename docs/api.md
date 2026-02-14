@@ -1,4 +1,20 @@
-# NEXUS Data Layer API Reference
+# NEXUS API Reference
+
+## CLI Commands
+
+```bash
+nexus init                                    # Initialize project
+nexus run -t AAPL -t MSFT --demo              # Run with terminal UI
+nexus run -t AAPL --capital 100000 --no-ui    # Run headless
+nexus backtest -t AAPL -s 2023-01-01 -o out.html --format html
+nexus analyze -t TSLA --depth deep
+nexus report --type daily --format html -o report.html
+nexus status                                   # Health checks
+nexus dashboard                                # Launch Streamlit
+nexus costs                                    # LLM cost summary
+```
+
+---
 
 ## Data Pipeline
 
@@ -172,3 +188,109 @@ All types are Pydantic v2 models defined in `nexus/core/types.py`:
 - `Portfolio` — Full portfolio state
 - `AgentState` — Agent status and metrics
 - `BacktestResult` — Backtest performance summary
+
+---
+
+## Orchestration
+
+### `TradingGraph`
+
+```python
+from nexus.orchestration.graph import TradingGraph
+from nexus.core.config import get_config
+
+graph = TradingGraph(config=get_config())
+result = await graph.run(ticker="AAPL", capital=100_000)
+```
+
+Returns a dict with `recommendation`, `confidence`, `exposure`, `reasoning`, `cost_usd`.
+
+---
+
+## Monitoring
+
+### `NexusMetrics`
+
+```python
+from nexus.monitoring.metrics import NexusMetrics
+
+metrics = NexusMetrics()
+metrics.record_decision(agent="technical", latency_ms=120, cost_usd=0.003)
+metrics.record_api_call(provider="yfinance", success=True)
+metrics.update_portfolio(value=105000, pnl=5000, positions=5)
+snapshot = metrics.get_snapshot()
+```
+
+### `AlertManager`
+
+```python
+from nexus.monitoring.alerts import AlertManager
+
+alerts = AlertManager()
+alerts.add_slack("https://hooks.slack.com/...")
+alerts.setup_default_rules()
+await alerts.check_rules(metrics.get_snapshot())
+```
+
+### `CostTracker`
+
+```python
+from nexus.monitoring.cost import CostTracker
+
+tracker = CostTracker()
+tracker.record(agent="technical", model="claude-sonnet-4-20250514", input_tokens=500, output_tokens=200, cost_usd=0.003)
+summary = tracker.get_summary()
+breakdown = tracker.get_agent_breakdown()
+```
+
+### `HealthChecker`
+
+```python
+from nexus.monitoring.health import HealthChecker
+
+checker = HealthChecker()
+results = await checker.run_all_checks()
+```
+
+---
+
+## Reports
+
+```python
+from nexus.reports import DailyReport, WeeklyReport, BacktestReport
+
+daily = DailyReport(portfolio=portfolio)
+daily.add_trades(trades)
+print(daily.to_text())
+Path("daily.html").write_text(daily.to_html())
+
+weekly = WeeklyReport(portfolio=portfolio)
+weekly.add_trades(trades)
+weekly.add_daily_values([{"date": "2024-01-15", "value": 105000}, ...])
+print(weekly.to_text())
+
+backtest_report = BacktestReport(result=backtest_result)
+Path("backtest.html").write_text(backtest_report.to_html())
+```
+
+---
+
+## Terminal UI
+
+```python
+from nexus.ui.tui import TradingTUI
+
+tui = TradingTUI()
+tui.run_sync(demo=True)                       # Demo mode
+await tui.run_with_graph(graph, ["AAPL"], 100000)  # Live mode
+```
+
+---
+
+## Web Dashboard
+
+```bash
+nexus dashboard --port 8501
+# or
+streamlit run nexus/ui/dashboard/app.py
+```

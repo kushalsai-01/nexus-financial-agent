@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nexus-config
+  namespace: nexus
+  labels:
+    app.kubernetes.io/name: nexus
+data:
+  nexus.yaml: |
+    logging:
+      level: INFO
+      log_dir: /app/logs
+      format: json
+    llm:
+      primary:
+        provider: anthropic
+        model: claude-sonnet-4-20250514
+        temperature: 0.1
+      fallback:
+        provider: openai
+        model: gpt-4o
+        temperature: 0.1
+    risk:
+      max_position_pct: 0.10
+      max_portfolio_risk: 0.25
+      max_drawdown_pct: 0.15
+      daily_loss_limit_pct: 0.05
+    execution:
+      mode: paper
+      broker: alpaca
+    monitoring:
+      prometheus:
+        enabled: true
+        port: 9090
+      langfuse:
+        enabled: false
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nexus-secrets
+  namespace: nexus
+  labels:
+    app.kubernetes.io/name: nexus
+type: Opaque
+stringData:
+  ANTHROPIC_API_KEY: ""
+  OPENAI_API_KEY: ""
+  ALPACA_API_KEY: ""
+  ALPACA_SECRET_KEY: ""
+  POSTGRES_PASSWORD: ""
