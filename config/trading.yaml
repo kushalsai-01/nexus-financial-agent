@@ -1,0 +1,93 @@
+backtest:
+  initial_capital: 100000
+  max_position_pct: 0.15
+  max_total_exposure: 1.0
+  stop_loss_pct: 0.08
+  trailing_stop_pct: 0.15
+  atr_stop_multiplier: 2.0
+  time_stop_days: 60
+  rebalance_frequency: daily
+  seed: 42
+
+  costs:
+    commission_pct: 0.0001
+    min_commission: 1.0
+    spread_bps: 1.0
+    market_impact_factor: 0.5
+    overnight_cost_pct: 0.0001
+
+  validation:
+    train_days: 504
+    test_days: 63
+    step_days: 21
+    min_train_days: 252
+    expanding: false
+
+  regime:
+    bull_threshold: 0.10
+    bear_threshold: -0.10
+    high_vol_threshold: 0.25
+    crisis_drawdown: -0.20
+    volatility_lookback: 21
+    trend_lookback: 63
+
+risk:
+  limits:
+    max_position_pct: 0.15
+    max_sector_pct: 0.30
+    max_leverage: 1.0
+    max_correlation: 0.80
+    max_beta: 1.5
+    max_drawdown_pct: 0.20
+    max_daily_loss_pct: 0.03
+    max_open_positions: 20
+    min_cash_pct: 0.05
+    max_single_trade_pct: 0.10
+    max_concentration_top3: 0.40
+
+  var:
+    confidence_level: 0.95
+    risk_free_rate: 0.04
+    horizons:
+      - 1
+      - 10
+      - 30
+
+  monte_carlo:
+    n_simulations: 10000
+    seed: 42
+
+  vix_thresholds:
+    reduction: 30.0
+    halt: 45.0
+
+execution:
+  broker: alpaca
+  paper: true
+
+  algorithms:
+    default: vwap
+    max_participation_rate: 0.05
+    min_fill_size: 100
+    randomize: true
+
+  simulator:
+    fill_probability: 0.98
+    partial_fill_probability: 0.20
+    reject_probability: 0.02
+    enforce_market_hours: true
+    market_open: "09:30"
+    market_close: "16:00"
+
+analysis:
+  optimization:
+    n_trials: 100
+    n_jobs: 1
+    seed: 42
+    max_drawdown_limit: 0.20
+    min_win_rate: 0.45
+    min_trades: 30
+
+  sensitivity:
+    n_steps: 10
+    variation_pct: 0.50
