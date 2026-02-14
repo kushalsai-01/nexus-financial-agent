@@ -1,5 +1,7 @@
 # NEXUS — Autonomous Multi-Agent Hedge Fund
 
+<div align="center">
+
 ```
  ███╗   ██╗███████╗██╗  ██╗██╗   ██╗███████╗
  ████╗  ██║██╔════╝╚██╗██╔╝██║   ██║██╔════╝
@@ -7,283 +9,381 @@
  ██║╚██╗██║██╔══╝   ██╔██╗ ██║   ██║╚════██║
  ██║ ╚████║███████╗██╔╝ ╚██╗╚██████╔╝███████║
  ╚═╝  ╚═══╝╚══════╝╚═╝   ╚═╝ ╚═════╝ ╚══════╝
-         Autonomous Financial Intelligence
 ```
+
+**Production-ready autonomous trading platform where 14 AI agents collaborate to analyze markets and execute trades**
 
 [![CI](https://github.com/kushalsai-01/nexus-financial-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/kushalsai-01/nexus-financial-agent/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Type checked: mypy](https://img.shields.io/badge/type%20check-mypy-blue.svg)](https://mypy-lang.org/)
-[![License: Private](https://img.shields.io/badge/license-private-red.svg)]()
 
-A production-grade autonomous hedge fund system powered by a multi-agent architecture where **14 specialized AI agents** collaborate across **5 teams** to analyze markets, generate trading signals, manage risk, and execute trades — with a beautiful terminal UI, web dashboard, comprehensive monitoring, and full deployment tooling.
+[Quick Start](#-quick-start) • [Architecture](#-architecture) • [Features](#-features) • [Documentation](#-documentation)
+
+</div>
 
 ---
 
-## Architecture
+## 🎯 What is NEXUS?
 
+NEXUS is a fully autonomous hedge fund system that uses **14 specialized AI agents** working together across **5 teams** to analyze financial markets and make trading decisions. Think of it as a digital trading desk where each agent has a specific role — from gathering market data to executing trades — all coordinated by AI to work as one intelligent system.
+
+**Key Stats:**
+- 🤖 14 AI agents across 5 specialized teams
+- 📊 30+ technical indicators with automatic analysis
+- 💰 Full risk management with position limits and stop-loss
+- 🎨 Beautiful terminal UI + web dashboard
+- 📈 Complete backtesting engine with walk-forward testing
+- 🔍 Real-time monitoring with cost tracking and alerts
+- 🚀 One-command deployment with Docker and Kubernetes
+
+---
+
+## 🏗️ Architecture
+
+```mermaid
+graph TB
+    subgraph "Data Layer"
+        MD[Market Data<br/>yfinance, Alpaca]
+        NEWS[News & Sentiment<br/>FinBERT, Social Media]
+        FUND[Fundamentals<br/>SEC Filings, Financials]
+        MD --> PROC[Data Processing<br/>30+ Indicators<br/>Feature Engineering]
+        NEWS --> PROC
+        FUND --> PROC
+        PROC --> STORE[(Storage<br/>PostgreSQL<br/>InfluxDB<br/>ChromaDB)]
+    end
+
+    subgraph "Agent Layer - 14 AI Agents"
+        subgraph "🔬 Analyst Team"
+            A1[market_data]
+            A2[sentiment]
+            A3[fundamental]
+        end
+        
+        subgraph "📊 Quant Team"
+            Q1[technical]
+            Q2[quantitative]
+            Q3[macro]
+        end
+        
+        subgraph "🔎 Research Team"
+            R1[bull]
+            R2[bear]
+            R3[coordinator]
+        end
+        
+        subgraph "⚡ Strategy Team"
+            S1[event]
+            S2[rl_agent]
+            S3[risk]
+        end
+        
+        subgraph "💰 Execution Team"
+            E1[portfolio]
+            E2[execution]
+        end
+    end
+
+    subgraph "Orchestration"
+        GRAPH[LangGraph State Machine<br/>Consensus & Debate]
+        LLM[LLM Router<br/>Claude + GPT-4o<br/>Auto Fallback]
+    end
+
+    subgraph "Execution Layer"
+        BROKER[Broker Gateway<br/>Alpaca/Paper Trading]
+        RISK[Risk Engine<br/>Position Limits<br/>Stop Loss<br/>Drawdown Control]
+        ORDER[Order Manager<br/>Slippage Model]
+    end
+
+    subgraph "Monitoring & Observability"
+        TRACE[Distributed Tracing<br/>Langfuse/LangSmith]
+        METRICS[Metrics<br/>Prometheus]
+        ALERTS[Smart Alerts<br/>Slack/PagerDuty/Email]
+        COST[Cost Tracking<br/>Per-Agent Budget]
+        HEALTH[Health Checks<br/>DB/API/Broker]
+    end
+
+    subgraph "User Interfaces"
+        TUI[Terminal UI<br/>Rich Live Dashboard]
+        DASH[Web Dashboard<br/>Streamlit + Plotly]
+        CLI[CLI Tool<br/>Click Commands]
+        REPORTS[HTML Reports<br/>Daily/Weekly/Backtest]
+    end
+
+    STORE --> A1 & A2 & A3
+    STORE --> Q1 & Q2 & Q3
+    
+    A1 & A2 & A3 --> GRAPH
+    Q1 & Q2 & Q3 --> GRAPH
+    R1 & R2 & R3 --> GRAPH
+    S1 & S2 & S3 --> GRAPH
+    
+    GRAPH --> LLM
+    LLM -.->|queries| A1 & A2 & A3 & Q1 & Q2 & Q3 & R1 & R2 & R3 & S1 & S2 & S3
+    
+    GRAPH --> E1
+    E1 --> RISK
+    RISK --> E2
+    E2 --> ORDER
+    ORDER --> BROKER
+    
+    GRAPH --> TRACE
+    GRAPH --> METRICS
+    GRAPH --> COST
+    BROKER --> HEALTH
+    
+    METRICS --> ALERTS
+    HEALTH --> ALERTS
+    
+    BROKER -.->|updates| STORE
+    
+    STORE --> TUI & DASH & CLI & REPORTS
+    METRICS --> TUI & DASH
+    TRACE --> DASH
+
+    style GRAPH fill:#7c3aed,stroke:#333,stroke-width:2px,color:#fff
+    style LLM fill:#7c3aed,stroke:#333,stroke-width:2px,color:#fff
+    style RISK fill:#ef4444,stroke:#333,stroke-width:2px,color:#fff
+    style ALERTS fill:#f59e0b,stroke:#333,stroke-width:2px,color:#fff
 ```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                            NEXUS SYSTEM                                  │
-├──────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  DATA LAYER             AGENT LAYER              EXECUTION LAYER         │
-│  ┌────────────────┐     ┌────────────────────┐   ┌──────────────────┐   │
-│  │ Market Data    │────▶│ 🔬 Analyst Team    │   │ Order Manager    │   │
-│  │ News Feeds     │     │  market_data        │   │ Broker Gateway   │   │
-│  │ SEC Filings    │     │  sentiment          │──▶│ Position Tracker │   │
-│  │ Social Media   │     │  fundamental        │   │ Slippage Model   │   │
-│  └────────┬───────┘     ├────────────────────┤   └──────────────────┘   │
-│           │             │ 📊 Quant Team       │                          │
-│  ┌────────▼───────┐     │  technical          │   MONITORING             │
-│  │ 30+ Indicators │     │  quantitative       │   ┌──────────────────┐   │
-│  │ Feature Eng.   │     │  macro              │   │ Langfuse Tracing │   │
-│  │ FinBERT NLP    │     ├────────────────────┤   │ Prometheus       │   │
-│  └────────────────┘     │ 🔎 Research Team    │   │ Cost Tracking    │   │
-│                         │  bull / bear         │   │ Health Checks    │   │
-│  STORAGE                │  coordinator         │   │ Alerting         │   │
-│  ┌────────────────┐     ├────────────────────┤   └──────────────────┘   │
-│  │ PostgreSQL 16  │     │ ⚡ Strategy Team    │                          │
-│  │ InfluxDB 2.7   │     │  event / rl_agent   │   UI LAYER               │
-│  │ ChromaDB       │     │  risk               │   ┌──────────────────┐   │
-│  └────────────────┘     ├────────────────────┤   │ Rich Terminal UI │   │
-│                         │ 💰 Execution Team   │   │ Streamlit Dash.  │   │
-│                         │  portfolio           │   │ HTML Reports     │   │
-│                         │  execution           │   │ Click CLI        │   │
-│                         └────────────────────┘   └──────────────────┘   │
-└──────────────────────────────────────────────────────────────────────────┘
-```
 
-## Features
+---
 
-### Core Intelligence
-- **14 Specialized AI Agents** across 5 collaborative teams (Analyst, Research, Quant, Strategy, Execution)
-- **Multi-LLM Support** — Claude (Anthropic), GPT-4o (OpenAI) with automatic fallback & cost tracking
-- **LangGraph Orchestration** — Stateful agent workflows with debate & consensus mechanisms
-- **Multi-Source Data Pipeline** — Market data, news, fundamentals, social sentiment
+## ✨ Features
 
-### Analysis & Trading
-- **30+ Technical Indicators** with automatic computation (RSI, MACD, Bollinger, etc.)
-- **Advanced Feature Engineering** — Returns, volatility, rolling statistics, z-scores
-- **FinBERT Sentiment Analysis** — NLP on financial news and social media
-- **Backtesting Engine** — Walk-forward, Monte Carlo, comprehensive metrics (Sharpe, Sortino, Calmar)
-- **Risk Management** — Position limits, drawdown controls, VaR, exposure monitoring
-- **Execution Engine** — Simulated and paper trading with slippage modeling
+### 🤖 Multi-Agent Intelligence
 
-### Observability & Monitoring
-- **Langfuse/LangSmith Tracing** — Full LLM call tracing with cost attribution
-- **Prometheus Metrics** — Decisions/sec, API latency, portfolio value, agent accuracy
-- **Smart Alerting** — Slack, PagerDuty, Email, Webhook with cooldown & severity routing
-- **Health Checks** — Database, LLM providers, market data, broker connectivity
-- **LLM Cost Tracking** — Per-agent, per-model, daily budgets with automatic warnings
+**5 Specialized Teams, 14 AI Agents:**
+- **🔬 Analyst Team** — Collects and analyzes market data, news sentiment, and fundamentals
+- **📊 Quant Team** — Technical analysis, quantitative modeling, macroeconomic signals
+- **🔎 Research Team** — Bull/bear debate system with coordinator for consensus
+- **⚡ Strategy Team** — Event-driven strategies, reinforcement learning, risk assessment
+- **💰 Execution Team** — Portfolio optimization and trade execution
 
-### User Interface
-- **Beautiful Terminal UI** — Rich-powered live dashboard with 4 FPS refresh, agent progress, message feed
-- **Web Dashboard** — Streamlit + Plotly with 5 pages (Overview, Agents, Backtests, Trades, Risk)
-- **HTML Reports** — Daily, weekly, and backtest reports with dark-themed templates
-- **Click CLI** — Full command-line interface (run, backtest, analyze, report, status, dashboard, costs, init)
+**AI-Powered:**
+- Multi-LLM support (Claude, GPT-4o) with automatic fallback
+- LangGraph orchestration for complex agent workflows
+- Debate and consensus mechanisms for better decisions
+- Per-agent cost tracking and budget management
 
-### Infrastructure
-- **Docker + Docker Compose** — One-command development stack
-- **Kubernetes Manifests** — Production deployment with probes, resource limits, ingress
-- **Terraform** — AWS infrastructure (VPC, RDS, ECR, security groups)
-- **CI/CD** — GitHub Actions with lint, type-check, test matrix
+### 📊 Data & Analysis
 
-## Tech Stack
+- **Real-time market data** from multiple sources (yfinance, Alpaca)
+- **30+ technical indicators** — RSI, MACD, Bollinger Bands, etc.
+- **Sentiment analysis** — FinBERT NLP on news and social media
+- **Fundamental analysis** — SEC filings, earnings, financials
+- **Feature engineering** — Returns, volatility, z-scores, correlation
 
-| Component | Technology |
-|-----------|-----------|
-| Language | Python 3.11+ |
-| AI/LLM | Claude (Anthropic), GPT-4o (OpenAI) |
-| Orchestration | LangGraph, LangChain |
-| Market Data | yfinance, Alpaca |
-| NLP | FinBERT (HuggingFace Transformers) |
-| Databases | PostgreSQL 16, InfluxDB 2.7, ChromaDB |
-| Terminal UI | Rich (Live, Layout, Panel, Table) |
-| Dashboard | Streamlit, Plotly |
-| CLI | Click |
-| Reports | Jinja2 HTML templates |
-| Monitoring | Langfuse, Prometheus, Slack/PagerDuty |
-| Type Safety | Pydantic v2, mypy (strict) |
-| Testing | pytest, pytest-asyncio, pytest-cov |
-| CI/CD | GitHub Actions |
-| Deployment | Docker, Kubernetes, Terraform |
+### 💹 Trading & Risk
 
-## Quick Start
+- **Backtesting engine** with walk-forward testing and Monte Carlo simulation
+- **Risk management** — Position limits, stop-loss, drawdown controls, VaR
+- **Order execution** — Paper trading and simulated execution
+- **Slippage modeling** — Realistic trade simulation
+- **Performance metrics** — Sharpe, Sortino, Calmar, max drawdown
+
+### 📡 Monitoring & Observability
+
+**Production-ready monitoring:**
+- 🔍 **Distributed tracing** — Langfuse and LangSmith integration
+- 📊 **Prometheus metrics** — API latency, decision rate, portfolio value
+- 🚨 **Smart alerting** — Slack, PagerDuty, Email with severity routing
+- 💰 **Cost tracking** — Per-agent LLM costs with daily budgets
+- 🏥 **Health checks** — Database, APIs, broker connectivity
+
+### 🎨 User Interfaces
+
+**Multiple ways to interact:**
+- **Terminal UI** — Beautiful live dashboard with Rich (4 FPS refresh)
+- **Web Dashboard** — Streamlit app with 5 pages and interactive Plotly charts
+- **CLI Tool** — Full command-line interface for all operations
+- **HTML Reports** — Professional daily, weekly, and backtest reports
+
+### 🚀 Infrastructure
+
+**Production-ready deployment:**
+- 🐳 Docker + Docker Compose for local development
+- ☸️ Kubernetes manifests with probes and resource limits
+- 🏗️ Terraform for AWS infrastructure (VPC, RDS, ECR)
+- 🔄 CI/CD with GitHub Actions
+- 📝 Comprehensive documentation and type safety
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Python 3.11+
-- Docker & Docker Compose (optional, for full stack)
-- API keys (Anthropic and/or OpenAI)
+```bash
+Python 3.11+
+Docker (optional)
+API keys: Anthropic and/or OpenAI
+```
 
-### Installation
+### Install & Run
 
 ```bash
+# Clone repository
 git clone https://github.com/kushalsai-01/nexus-financial-agent.git
 cd nexus-financial-agent
 
+# Create virtual environment
 python -m venv .venv
 .venv\Scripts\activate  # Windows
-# source .venv/bin/activate  # Linux/Mac
+# source .venv/bin/activate  # macOS/Linux
 
+# Install dependencies
 pip install -e ".[dev]"
 
-cp .env.example .env
+# Setup configuration
+nexus init
 # Edit .env with your API keys
 ```
 
-### CLI Usage
+### Run Your First Analysis
 
 ```bash
-# Initialize a new project
-nexus init
-
-# Run with terminal UI (demo mode)
+# Demo mode (simulated data)
 nexus run -t AAPL -t MSFT --demo
 
-# Run live analysis
-nexus run -t AAPL -t NVDA -t GOOGL --capital 100000
+# Live analysis
+nexus run -t AAPL -t NVDA -t GOOGL --capital 100000 --paper
+
+# Quick health check
+nexus status
+
+# Open web dashboard
+nexus dashboard
+```
+
+---
+
+## 💻 Usage Examples
+
+### CLI Commands
+
+```bash
+# Initialize project with default config
+nexus init
+
+# Run analysis with terminal UI
+nexus run -t AAPL -t MSFT -t GOOGL --capital 100000
 
 # Backtest a strategy
 nexus backtest -t AAPL -s 2023-01-01 -e 2024-01-01 --format html -o report.html
 
-# Quick analysis
+# Deep analysis on a ticker
 nexus analyze -t TSLA --depth deep
 
-# Generate reports
-nexus report --type daily --format html -o daily.html
+# Generate daily report
+nexus report --type daily --format html
 
-# System health check
+# Check system status
 nexus status
 
-# Launch web dashboard
-nexus dashboard
+# View LLM costs
+nexus costs --format json
 
-# LLM cost summary
-nexus costs
+# Launch web dashboard
+nexus dashboard --port 8501
 ```
 
-### Docker
+### Docker Deployment
 
 ```bash
-# Start full stack (Postgres, InfluxDB, ChromaDB, NEXUS)
+# Start all services
 cd docker && docker compose up -d
 
-# Or use the deploy script
-bash deploy/deploy.sh up
-bash deploy/deploy.sh status
-bash deploy/deploy.sh logs
+# Check logs
+docker compose logs -f nexus
+
+# Stop services
+docker compose down
 ```
 
-### Kubernetes
+### Kubernetes Deployment
 
 ```bash
-# Deploy to K8s cluster
-bash deploy/deploy.sh deploy-k8s
+# Deploy to cluster
+kubectl apply -f deploy/k8s/
 
-# Or manually
-kubectl apply -f deploy/k8s/namespace.yaml
-kubectl apply -f deploy/k8s/configmap.yaml
-kubectl apply -f deploy/k8s/services.yaml
-kubectl apply -f deploy/k8s/deployment.yaml
+# Check status
+kubectl get pods -n nexus
+
+# View logs
+kubectl logs -n nexus -l app=nexus-agent -f
 ```
 
-## Project Structure
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Language** | Python 3.11+ with full type hints |
+| **AI/LLM** | Claude (Anthropic), GPT-4o (OpenAI) |
+| **Orchestration** | LangGraph, LangChain |
+| **Data** | yfinance, Alpaca, FinBERT |
+| **Databases** | PostgreSQL 16, InfluxDB 2.7, ChromaDB |
+| **Terminal UI** | Rich (Live, Layout, Tables) |
+| **Web Dashboard** | Streamlit + Plotly |
+| **CLI** | Click |
+| **Monitoring** | Langfuse, Prometheus, Slack/PagerDuty |
+| **Testing** | pytest, pytest-asyncio, pytest-cov |
+| **Type Safety** | Pydantic v2, mypy (strict mode) |
+| **Deployment** | Docker, Kubernetes, Terraform |
+| **CI/CD** | GitHub Actions |
+
+---
+
+## 📁 Project Structure
+
+<details>
+<summary>Click to expand full directory tree</summary>
+
 
 ```
 nexus-financial-agent/
-├── nexus/
-│   ├── core/                    # Foundation layer
-│   │   ├── config.py             # Pydantic settings, YAML loading
-│   │   ├── types.py              # Domain models (Signal, Trade, Portfolio, etc.)
-│   │   ├── exceptions.py         # NexusError hierarchy (14 exception types)
-│   │   └── logging.py            # Structured JSON logging
-│   ├── data/
-│   │   ├── providers/            # Data sources (market, news, fundamentals, social)
-│   │   ├── storage/              # PostgreSQL, InfluxDB, ChromaDB
-│   │   ├── processors/           # Technical indicators, features, sentiment
-│   │   └── pipeline.py           # Data orchestration
-│   ├── agents/                   # 14 AI agents
-│   │   ├── base.py               # BaseAgent with LLM integration
-│   │   ├── market_data.py        # Market data collection
-│   │   ├── technical.py          # Technical analysis
-│   │   ├── fundamental.py        # Fundamental analysis
-│   │   ├── sentiment.py          # Sentiment analysis
-│   │   ├── quantitative.py       # Quantitative modeling
-│   │   ├── macro.py              # Macroeconomic analysis
-│   │   ├── event.py              # Event-driven strategies
-│   │   ├── rl_agent.py           # Reinforcement learning
-│   │   ├── bull.py / bear.py     # Debate agents
-│   │   ├── risk.py               # Risk assessment
-│   │   ├── portfolio.py          # Portfolio optimization
-│   │   ├── execution.py          # Trade execution
-│   │   └── coordinator.py        # Multi-agent coordination
-│   ├── orchestration/            # LangGraph workflow
-│   │   ├── graph.py              # TradingGraph with run()
-│   │   └── state.py              # TradingState TypedDict
-│   ├── llm/                      # LLM integration
-│   │   ├── providers.py          # Anthropic, OpenAI, LLMRouter
-│   │   └── prompts.py            # System & agent prompts
-│   ├── backtest/                 # Backtesting engine
-│   │   ├── engine.py             # Walk-forward backtester
-│   │   ├── metrics.py            # Sharpe, Sortino, Calmar, etc.
-│   │   └── reports.py            # Backtest result formatting
-│   ├── risk/                     # Risk management
-│   │   ├── monitor.py            # RiskMonitor with alerts
-│   │   └── limits.py             # Position/exposure limits
-│   ├── execution/                # Order execution
-│   │   ├── engine.py             # SimulatedBroker, PaperBroker
-│   │   └── models.py             # Order, Fill, SlippageModel
-│   ├── analysis/                 # Advanced analytics
-│   │   ├── correlation.py        # Correlation & regime detection
-│   │   ├── performance.py        # Performance attribution
-│   │   └── optimization.py       # Portfolio optimization
-│   ├── monitoring/               # Observability stack
-│   │   ├── trace.py              # Langfuse/LangSmith tracing
-│   │   ├── metrics.py            # Prometheus metrics & counters
-│   │   ├── alerts.py             # Slack/PagerDuty/Email alerting
-│   │   ├── health.py             # Health checks
-│   │   └── cost.py               # LLM cost tracking
-│   ├── reports/                  # Report generation
-│   │   ├── daily.py              # Daily P&L report
-│   │   ├── weekly.py             # Weekly performance summary
-│   │   ├── backtest.py           # Backtest report with monthly heatmap
-│   │   └── templates/            # Jinja2 HTML templates
-│   ├── ui/                       # User interfaces
-│   │   ├── tui.py                # Rich terminal UI (4 FPS live)
-│   │   ├── themes.py             # Color themes & styling
-│   │   ├── components.py         # UI components (tables, panels, bars)
-│   │   ├── layouts.py            # Layout managers
-│   │   └── dashboard/            # Streamlit web dashboard
-│   │       ├── app.py             # Main app with navigation
-│   │       └── pages/             # Overview, Agents, Backtests, Trades, Risk
-│   └── cli/                      # Click CLI
-│       └── main.py               # Commands: run, backtest, analyze, report, etc.
+├── nexus/                       # Main application
+│   ├── core/                    # Foundation (config, types, exceptions, logging)
+│   ├── data/                    # Data pipeline (providers, storage, processors)
+│   ├── agents/                  # 14 AI agents (analyst, quant, research, strategy, execution)
+│   ├── orchestration/           # LangGraph workflow & state management
+│   ├── llm/                     # LLM integration (Anthropic, OpenAI, router)
+│   ├── backtest/                # Backtesting engine & metrics
+│   ├── risk/                    # Risk management & monitoring
+│   ├── execution/               # Order execution & broker integration
+│   ├── analysis/                # Advanced analytics & optimization
+│   ├── monitoring/              # Tracing, metrics, alerts, health checks
+│   ├── reports/                 # Report generators (daily, weekly, backtest)
+│   ├── ui/                      # Terminal UI, web dashboard, themes
+│   └── cli/                     # Click CLI commands
 ├── deploy/
-│   ├── k8s/                      # Kubernetes manifests
-│   ├── terraform/                # AWS infrastructure
-│   └── deploy.sh                 # Deployment script
-├── docker/
-│   ├── Dockerfile                # Multi-stage build
-│   └── docker-compose.yml        # Full development stack
-├── config/                       # YAML configuration
-├── tests/                        # Unit & integration tests
-├── .github/workflows/            # CI/CD pipelines
-├── pyproject.toml                # Project config & all dependencies
-└── Makefile                      # Developer shortcuts
+│   ├── k8s/                     # Kubernetes manifests
+│   ├── terraform/               # AWS infrastructure as code
+│   └── deploy.sh                # Deployment automation script
+├── docker/                      # Docker & docker-compose
+├── tests/                       # Unit & integration tests
+├── config/                      # YAML configuration files
+├── docs/                        # Detailed documentation
+└── pyproject.toml               # Dependencies & project metadata
 ```
 
-## Configuration
+</details>
 
-Layered configuration: `config/default.yaml` → `config/{env}.yaml` → env vars → `.env`
+---
+
+## ⚙️ Configuration
+
+NEXUS uses layered configuration (YAML + environment variables):
 
 ```yaml
+# config/nexus.yaml
 risk:
-  max_position_size_pct: 5.0
-  max_drawdown_pct: 10.0
-  daily_loss_limit_pct: 3.0
-  position_limit: 20
+  max_position_size_pct: 5.0      # Max 5% per position
+  max_drawdown_pct: 10.0          # Stop if 10% drawdown
+  daily_loss_limit_pct: 3.0       # Stop if 3% daily loss
+  position_limit: 20              # Max 20 positions
 
 monitoring:
   prometheus:
@@ -291,19 +391,80 @@ monitoring:
     port: 9090
   langfuse:
     enabled: true
+    public_key: ${LANGFUSE_PUBLIC_KEY}
+
+llm:
+  primary:
+    provider: anthropic
+    model: claude-sonnet-4-20250514
+    temperature: 0.1
+  fallback:
+    provider: openai
+    model: gpt-4o
 ```
 
-## Development
+---
+
+## 🧪 Development
 
 ```bash
-make test          # Run test suite
-make test-cov      # Tests with coverage
-make lint          # Ruff linting
-make format        # Black formatting
-make typecheck     # mypy strict
-make all           # All checks
+# Run tests
+make test
+
+# Run tests with coverage
+make test-cov
+
+# Format code
+make format
+
+# Type check
+make typecheck
+
+# Lint
+make lint
+
+# All checks
+make all
 ```
 
-## License
+---
+
+## 📚 Documentation
+
+- [Architecture Guide](docs/architecture.md) — System design and agent workflows
+- [API Reference](docs/api.md) — Complete API documentation
+- [Deployment Guide](docs/deployment.md) — Production deployment instructions
+- [Contributing Guide](CONTRIBUTING.md) — How to contribute
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+---
+
+## 📝 License
 
 Private — All rights reserved.
+
+---
+
+## 🙏 Acknowledgments
+
+Built with:
+- [LangChain](https://langchain.com/) & [LangGraph](https://langchain-ai.github.io/langgraph/) for agent orchestration
+- [Anthropic Claude](https://www.anthropic.com/) & [OpenAI GPT-4](https://openai.com/) for AI intelligence
+- [Rich](https://github.com/Textualize/rich) for beautiful terminal UI
+- [Streamlit](https://streamlit.io/) for web dashboard
+- [Alpaca](https://alpaca.markets/) for market data and paper trading
+
+---
+
+<div align="center">
+
+**⭐ Star this repo if you find it useful!**
+
+Made with ❤️ by the NEXUS team
+
+</div>
