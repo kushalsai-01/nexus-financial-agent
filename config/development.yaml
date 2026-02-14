@@ -1,0 +1,18 @@
+env: development
+
+logging:
+  level: DEBUG
+
+storage:
+  postgres:
+    echo: true
+
+execution:
+  broker: alpaca
+  mode: paper
+
+monitoring:
+  langfuse:
+    enabled: false
+  wandb:
+    enabled: false

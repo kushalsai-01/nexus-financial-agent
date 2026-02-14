@@ -1,0 +1,90 @@
+services:
+  nexus:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: nexus-agent
+    env_file:
+      - ../.env
+    environment:
+      - NEXUS_ENV=development
+      - POSTGRES_HOST=postgres
+      - INFLUXDB_URL=http://influxdb:8086
+      - CHROMADB_HOST=chromadb
+    ports:
+      - "8501:8501"
+      - "9090:9090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      influxdb:
+        condition: service_started
+      chromadb:
+        condition: service_started
+    volumes:
+      - ../logs:/app/logs
+      - ../data:/app/data
+    networks:
+      - nexus-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: nexus-postgres
+    environment:
+      POSTGRES_DB: nexus
+      POSTGRES_USER: nexus
+      POSTGRES_PASSWORD: nexus_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus -d nexus"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nexus-network
+    restart: unless-stopped
+
+  influxdb:
+    image: influxdb:2.7-alpine
+    container_name: nexus-influxdb
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: nexus
+      DOCKER_INFLUXDB_INIT_PASSWORD: nexus_dev_password
+      DOCKER_INFLUXDB_INIT_ORG: nexus
+      DOCKER_INFLUXDB_INIT_BUCKET: market_data
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: nexus-dev-token
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    networks:
+      - nexus-network
+    restart: unless-stopped
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: nexus-chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - chromadb_data:/chroma/chroma
+    environment:
+      ANONYMIZED_TELEMETRY: "false"
+    networks:
+      - nexus-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  influxdb_data:
+  chromadb_data:
+
+networks:
+  nexus-network:
+    driver: bridge

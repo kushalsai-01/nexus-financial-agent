@@ -1,0 +1,108 @@
+env: development
+
+logging:
+  level: INFO
+  dir: ./logs
+  format: json
+
+llm:
+  provider: anthropic
+  model: claude-sonnet-4-20250514
+  temperature: 0.1
+  max_tokens: 4096
+  fallback_provider: openai
+  fallback_model: gpt-4o
+
+data:
+  market:
+    primary: yfinance
+    fallback: alpaca
+    cache_ttl_seconds: 300
+    max_retries: 3
+    retry_delay: 1.0
+  news:
+    sources:
+      - newsapi
+      - rss
+    max_articles_per_source: 50
+    dedup_window_hours: 24
+  fundamentals:
+    source: sec_edgar
+    cache_days: 7
+  social:
+    reddit_subreddits:
+      - wallstreetbets
+      - stocks
+      - investing
+    max_posts: 100
+
+storage:
+  postgres:
+    pool_size: 10
+    max_overflow: 20
+    echo: false
+  influxdb:
+    write_precision: s
+    batch_size: 5000
+  chromadb:
+    collection_prefix: nexus
+    embedding_model: all-MiniLM-L6-v2
+
+agents:
+  teams:
+    analyst:
+      - fundamentals_analyst
+      - technical_analyst
+      - sentiment_analyst
+    research:
+      - macro_economist
+      - sector_analyst
+      - news_analyst
+    quant:
+      - quant_strategist
+      - momentum_trader
+      - mean_reversion
+    risk:
+      - risk_manager
+      - portfolio_optimizer
+    execution:
+      - trade_executor
+  consensus_threshold: 0.6
+  max_discussion_rounds: 3
+  timeout_seconds: 120
+
+risk:
+  max_position_size: 0.10
+  max_portfolio_leverage: 1.0
+  max_sector_exposure: 0.30
+  max_correlation: 0.70
+  max_drawdown: 0.15
+  var_confidence: 0.95
+  var_horizon_days: 1
+  max_positions: 20
+  stop_loss_pct: 0.05
+  take_profit_pct: 0.15
+  daily_loss_limit: 0.03
+  max_portfolio_value: 1000000
+
+execution:
+  broker: alpaca
+  mode: paper
+  max_slippage_pct: 0.005
+  order_timeout_seconds: 30
+  retry_attempts: 3
+
+monitoring:
+  langfuse:
+    enabled: false
+  wandb:
+    enabled: false
+  prometheus:
+    enabled: true
+    port: 9090
+
+backtest:
+  initial_capital: 1000000
+  commission_pct: 0.001
+  slippage_pct: 0.0005
+  benchmark: SPY

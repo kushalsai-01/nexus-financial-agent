@@ -1,0 +1,22 @@
+env: production
+
+logging:
+  level: WARNING
+
+storage:
+  postgres:
+    echo: false
+    pool_size: 20
+    max_overflow: 40
+
+execution:
+  broker: alpaca
+  mode: live
+
+monitoring:
+  langfuse:
+    enabled: true
+  wandb:
+    enabled: true
+  prometheus:
+    enabled: true
