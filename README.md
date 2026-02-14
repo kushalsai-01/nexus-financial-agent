@@ -244,13 +244,6 @@ make typecheck
 make all
 ```
 
-## Roadmap
-
-- [x] **Prompt 1**: Foundation, Data Layer, Infrastructure
-- [ ] **Prompt 2**: 14 AI Agents, LLM Integration, Orchestration
-- [ ] **Prompt 3**: Backtesting Engine, Risk Management, Execution
-- [ ] **Prompt 4**: Monitoring, CLI, Dashboard, Deployment
-
 ## License
 
 Private — All rights reserved.
