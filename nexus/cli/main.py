@@ -355,14 +355,19 @@ def init() -> None:
     default_config = {
         "logging": {"level": "INFO", "log_dir": "logs", "format": "json"},
         "llm": {
-            "primary": {"provider": "anthropic", "model": "claude-sonnet-4-20250514", "temperature": 0.1},
-            "fallback": {"provider": "openai", "model": "gpt-4o", "temperature": 0.1},
+            "primary": {"provider": "grok", "model": "grok-3", "temperature": 0.1, "max_tokens": 4096},
+            "fallback": {"provider": "grok", "model": "grok-3", "temperature": 0.1, "max_tokens": 4096},
         },
         "risk": {
-            "max_position_pct": 0.10,
-            "max_portfolio_risk": 0.25,
-            "max_drawdown_pct": 0.15,
-            "daily_loss_limit_pct": 0.05,
+            "max_position_size_pct": 5.0,
+            "max_portfolio_risk_pct": 15.0,
+            "max_sector_exposure_pct": 30.0,
+            "max_drawdown_pct": 10.0,
+            "daily_loss_limit_pct": 3.0,
+            "max_leverage": 1.0,
+            "position_limit": 20,
+            "stop_loss_pct": 5.0,
+            "trailing_stop_pct": 3.0,
         },
         "execution": {"mode": "paper", "broker": "alpaca"},
         "monitoring": {
@@ -373,7 +378,7 @@ def init() -> None:
 
     import yaml
 
-    config_path = config_dir / "nexus.yaml"
+    config_path = config_dir / "default.yaml"
     if config_path.exists():
         click.confirm(f"{config_path} already exists. Overwrite?", abort=True)
 
@@ -382,7 +387,21 @@ def init() -> None:
     env_example = Path(".env.example")
     if not env_example.exists():
         env_example.write_text(
-            "ANTHROPIC_API_KEY=\nOPENAI_API_KEY=\nALPACA_API_KEY=\nALPACA_SECRET_KEY=\n",
+            "# Required for LLM (Grok — only key needed for all agents)\n"
+            "GROK_API_KEY=\n"
+            "\n"
+            "# Optional: legacy LLM providers\n"
+            "ANTHROPIC_API_KEY=\n"
+            "OPENAI_API_KEY=\n"
+            "\n"
+            "# Optional: broker (paper/live trading)\n"
+            "ALPACA_API_KEY=\n"
+            "ALPACA_API_SECRET=\n"
+            "\n"
+            "# Optional: data sources\n"
+            "NEWSAPI_KEY=\n"
+            "REDDIT_CLIENT_ID=\n"
+            "REDDIT_CLIENT_SECRET=\n",
             encoding="utf-8",
         )
 
@@ -392,7 +411,7 @@ def init() -> None:
 
     click.echo(click.style("NEXUS project initialized!", fg="green", bold=True))
     click.echo(f"  Config:  {config_path}")
-    click.echo(f"  Next:    Copy .env.example to .env and add your API keys")
+    click.echo(f"  Next:    Copy .env.example to .env and set GROK_API_KEY")
 
 
 if __name__ == "__main__":

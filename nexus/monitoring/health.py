@@ -127,17 +127,18 @@ class HealthChecker:
         start = time.monotonic()
         try:
             import os
-            grok_key = os.getenv("GROK_API_KEY", "")
+            grok_key = os.getenv("GROK_API_KEY", "") or os.getenv("XAI_API_KEY", "")
             anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
             openai_key = os.getenv("OPENAI_API_KEY", "")
 
             latency = (time.monotonic() - start) * 1000
             # Healthy if at least one LLM key is set (Grok-only mode is fine)
-            if grok_key or (anthropic_key and openai_key):
+            if grok_key or anthropic_key or openai_key:
                 return ComponentHealth("api_keys", HealthStatus.HEALTHY, latency)
-            if anthropic_key or openai_key:
-                return ComponentHealth("api_keys", HealthStatus.DEGRADED, latency, "Only one legacy LLM key set; consider setting GROK_API_KEY")
-            return ComponentHealth("api_keys", HealthStatus.UNHEALTHY, latency, "Missing LLM API key: set GROK_API_KEY (or ANTHROPIC_API_KEY + OPENAI_API_KEY)")
+            return ComponentHealth(
+                "api_keys", HealthStatus.UNHEALTHY, latency,
+                "No LLM API key set. Set GROK_API_KEY (recommended), ANTHROPIC_API_KEY, or OPENAI_API_KEY.",
+            )
         except Exception as e:
             latency = (time.monotonic() - start) * 1000
             return ComponentHealth("api_keys", HealthStatus.UNHEALTHY, latency, str(e))

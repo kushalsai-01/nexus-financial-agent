@@ -41,10 +41,21 @@ class LLMRouter:
         self._initialize()
 
     def _initialize(self) -> None:
-        for tier, config in self.TIER_CONFIGS.items():
+        config = get_config()
+        for tier, tier_cfg in self.TIER_CONFIGS.items():
             override = self._overrides.get(tier, {})
-            provider_name = override.get("provider", config["provider"])
-            model = override.get("model", config["model"])
+            provider_name = override.get("provider", tier_cfg["provider"])
+            model = override.get("model", tier_cfg["model"])
+
+            # Fail-fast when the required API key is missing
+            if provider_name == "grok" and not getattr(config, "grok_api_key", ""):
+                logger.error(
+                    f"GROK_API_KEY (or XAI_API_KEY) is not set — "
+                    f"cannot initialise {tier} tier. "
+                    f"Add the key to your .env file and restart."
+                )
+                continue
+
             try:
                 self._providers[tier] = create_provider(provider_name, model)
                 logger.info(f"Router initialized {tier} tier: {provider_name}/{model}")

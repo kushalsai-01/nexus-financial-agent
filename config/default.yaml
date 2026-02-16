@@ -6,12 +6,20 @@ logging:
   format: json
 
 llm:
-  provider: anthropic
-  model: claude-sonnet-4-20250514
-  temperature: 0.1
-  max_tokens: 4096
-  fallback_provider: openai
-  fallback_model: gpt-4o
+  primary:
+    provider: grok
+    model: grok-3
+    temperature: 0.1
+    max_tokens: 4096
+    timeout: 60
+    max_retries: 3
+  fallback:
+    provider: grok
+    model: grok-3
+    temperature: 0.1
+    max_tokens: 4096
+    timeout: 60
+    max_retries: 3
 
 data:
   market:

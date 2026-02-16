@@ -70,6 +70,22 @@ class BaseAgent(ABC):
                 f"Agent {self.name} completed for {ticker}",
                 extra={"latency_ms": result.latency_ms, "cost": result.llm_cost_usd},
             )
+
+            # Record cost in global tracker for "nexus costs" visibility
+            if not result.error and result.llm_cost_usd > 0 and result.model_used:
+                try:
+                    from nexus.monitoring.cost import CostTracker
+                    CostTracker.get_instance().record(
+                        agent_name=self.name,
+                        model=result.model_used,
+                        input_tokens=result.input_tokens,
+                        output_tokens=result.output_tokens,
+                        cost_usd=result.llm_cost_usd,
+                        ticker=ticker,
+                    )
+                except Exception:
+                    pass  # never let cost tracking crash the agent
+
             return result
         except asyncio.TimeoutError:
             self._total_errors += 1

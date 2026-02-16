@@ -229,10 +229,18 @@ class TradingGraph:
         agent_data = {}
         for name, output in state.get("agent_outputs", {}).items():
             if isinstance(output, AgentOutput):
+                try:
+                    sig = (
+                        output.signal.signal_type.value
+                        if output.signal and getattr(output.signal, "signal_type", None)
+                        else "HOLD"
+                    )
+                except Exception:
+                    sig = "HOLD"
                 agent_data[name] = {
-                    "signal": output.signal.signal_type.value if output.signal else "HOLD",
-                    "confidence": output.confidence,
-                    "parsed_output": output.parsed_output,
+                    "signal": sig,
+                    "confidence": output.confidence or 0.0,
+                    "parsed_output": output.parsed_output or {},
                 }
 
         coordinator = self._agents["coordinator"]

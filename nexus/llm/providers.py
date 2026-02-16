@@ -211,7 +211,10 @@ class OpenAIProvider(BaseLLMProvider):
         except Exception as e:
             raise LLMError(f"OpenAI request failed: {e}") from e
 
-        content = data["choices"][0]["message"]["content"]
+        choices = data.get("choices")
+        if not choices:
+            raise LLMError("OpenAI returned empty choices – check model name and API key")
+        content = choices[0].get("message", {}).get("content", "") or ""
         usage = data.get("usage", {})
         input_tokens = usage.get("prompt_tokens", 0)
         output_tokens = usage.get("completion_tokens", 0)
@@ -275,7 +278,10 @@ class GroqProvider(BaseLLMProvider):
         except Exception as e:
             raise LLMError(f"Groq request failed: {e}") from e
 
-        content = data["choices"][0]["message"]["content"]
+        choices = data.get("choices")
+        if not choices:
+            raise LLMError("Groq returned empty choices – check model name and API key")
+        content = choices[0].get("message", {}).get("content", "") or ""
         usage = data.get("usage", {})
         input_tokens = usage.get("prompt_tokens", 0)
         output_tokens = usage.get("completion_tokens", 0)
@@ -341,7 +347,10 @@ class GrokProvider(BaseLLMProvider):
         except Exception as e:
             raise LLMError(f"Grok request failed: {e}") from e
 
-        content = data["choices"][0]["message"]["content"]
+        choices = data.get("choices")
+        if not choices:
+            raise LLMError("Grok returned empty choices – check model name and API key")
+        content = choices[0].get("message", {}).get("content", "") or ""
         usage = data.get("usage", {})
         input_tokens = usage.get("prompt_tokens", 0)
         output_tokens = usage.get("completion_tokens", 0)

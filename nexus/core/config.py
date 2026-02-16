@@ -287,6 +287,11 @@ def get_config(
         if env_val:
             yaml_data[key.lower()] = env_val
 
+    # XAI_API_KEY is an alias for GROK_API_KEY
+    xai_val = os.getenv("XAI_API_KEY", "")
+    if xai_val and not yaml_data.get("grok_api_key"):
+        yaml_data["grok_api_key"] = xai_val
+
     return NexusConfig(**yaml_data)
 
 

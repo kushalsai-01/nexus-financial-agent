@@ -86,7 +86,7 @@ graph TB
 
     subgraph "Orchestration"
         GRAPH[LangGraph State Machine<br/>Consensus & Debate]
-        LLM[LLM Router<br/>Claude + GPT-4o<br/>Auto Fallback]
+        LLM[LLM Router<br/>Grok + Fallback<br/>Auto Fallback]
     end
 
     subgraph "Execution Layer"
@@ -161,7 +161,7 @@ graph TB
 - **💰 Execution Team** — Portfolio optimization and trade execution
 
 **AI-Powered:**
-- Multi-LLM support (Claude, GPT-4o) with automatic fallback
+- Multi-LLM support (Grok, Claude, GPT-4o) with automatic fallback
 - LangGraph orchestration for complex agent workflows
 - Debate and consensus mechanisms for better decisions
 - Per-agent cost tracking and budget management
@@ -217,8 +217,29 @@ graph TB
 ```bash
 Python 3.11+
 Docker (optional)
-API keys: Anthropic and/or OpenAI
+API key: xAI Grok (GROK_API_KEY)   # only key required
 ```
+
+### Required Environment Variables
+
+Create a `.env` file in the project root (or export the variables):
+
+```bash
+# ── Required ────────────────────────────────────────────
+GROK_API_KEY=xai-...          # xAI Grok – the only LLM key you need
+
+# ── Optional (broker / data) ────────────────────────────
+ALPACA_API_KEY=               # Alpaca paper-trading key
+ALPACA_API_SECRET=            # Alpaca secret
+NEWS_API_KEY=                 # NewsAPI.org key
+
+# ── Optional (monitoring) ───────────────────────────────
+LANGFUSE_PUBLIC_KEY=
+LANGFUSE_SECRET_KEY=
+SLACK_WEBHOOK_URL=
+```
+
+> **Tip:** `XAI_API_KEY` is accepted as an alias for `GROK_API_KEY`.
 
 ### Install & Run
 
@@ -237,7 +258,7 @@ pip install -e ".[dev]"
 
 # Setup configuration
 nexus init
-# Edit .env with your API keys
+# Edit .env with your GROK_API_KEY
 ```
 
 ### Run Your First Analysis
@@ -321,7 +342,7 @@ kubectl logs -n nexus -l app=nexus-agent -f
 | Layer | Technology |
 |-------|-----------|
 | **Language** | Python 3.11+ with full type hints |
-| **AI/LLM** | Claude (Anthropic), GPT-4o (OpenAI) |
+| **AI/LLM** | Grok (xAI), Claude (Anthropic), GPT-4o (OpenAI) |
 | **Orchestration** | LangGraph, LangChain |
 | **Data** | yfinance, Alpaca, FinBERT |
 | **Databases** | PostgreSQL 16, InfluxDB 2.7, ChromaDB |
@@ -395,12 +416,12 @@ monitoring:
 
 llm:
   primary:
-    provider: anthropic
-    model: claude-sonnet-4-20250514
+    provider: grok
+    model: grok-3
     temperature: 0.1
   fallback:
-    provider: openai
-    model: gpt-4o
+    provider: grok
+    model: grok-3
 ```
 
 ---
@@ -454,7 +475,8 @@ Private — All rights reserved.
 
 Built with:
 - [LangChain](https://langchain.com/) & [LangGraph](https://langchain-ai.github.io/langgraph/) for agent orchestration
-- [Anthropic Claude](https://www.anthropic.com/) & [OpenAI GPT-4](https://openai.com/) for AI intelligence
+- [xAI Grok](https://x.ai/) for primary AI intelligence
+- [Anthropic Claude](https://www.anthropic.com/) & [OpenAI GPT-4](https://openai.com/) as optional alternatives
 - [Rich](https://github.com/Textualize/rich) for beautiful terminal UI
 - [Streamlit](https://streamlit.io/) for web dashboard
 - [Alpaca](https://alpaca.markets/) for market data and paper trading
