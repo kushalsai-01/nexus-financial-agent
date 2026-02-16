@@ -37,8 +37,9 @@ logger = get_logger("orchestration.graph")
 
 
 class TradingGraph:
-    def __init__(self, router: LLMRouter | None = None) -> None:
+    def __init__(self, router: LLMRouter | None = None, config: Any = None) -> None:
         self._router = router or LLMRouter()
+        self._config = config
         self._agents: dict[str, BaseAgent] = {}
         self._initialize_agents()
 
@@ -62,13 +63,32 @@ class TradingGraph:
         self._agents["execution"] = ExecutionAgent(provider=cheap)
         self._agents["coordinator"] = CoordinatorAgent(provider=medium)
 
-    async def run(self, ticker: str, initial_data: dict[str, Any] | None = None) -> TradingState:
+    async def run(self, ticker: str, initial_data: dict[str, Any] | None = None, capital: float | None = None) -> TradingState:
         state = create_initial_state(ticker)
+        if initial_data is None:
+            initial_data = {}
+        if capital is not None:
+            initial_data["capital"] = capital
         if initial_data:
             state.update(initial_data)
 
         start = time.monotonic()
         logger.info(f"Starting trading graph for {ticker}")
+
+        # Fetch real data via DataPipeline if state has no market data yet
+        try:
+            if not state.get("market_data") or not state["market_data"].get("latest_close"):
+                from nexus.data.pipeline import DataPipeline
+                pipeline = DataPipeline()
+                full = await pipeline.get_full_analysis(ticker, lookback_days=90)
+                state["market_data"] = full.get("market_data", state.get("market_data", {}))
+                state["news"] = full.get("news", state.get("news", []))
+                state["fundamentals"] = full.get("fundamentals", state.get("fundamentals", {}))
+                state["social_data"] = full.get("social", state.get("social_data", {}))
+                state["technical_indicators"] = full.get("market_data", {}).get("technical_summary", {})
+                state["current_price"] = full.get("market_data", {}).get("latest_close", 0) or state.get("current_price", 0)
+        except Exception as e:
+            logger.warning(f"Data pipeline failed for {ticker}, continuing with existing state: {e}")
 
         try:
             state = await self._node_fetch_data(state)
@@ -82,6 +102,41 @@ class TradingGraph:
                 state = await self._node_execute(state)
 
             state = await self._node_log_decision(state)
+
+            # Derive top-level recommendation fields from consensus/final_action
+            consensus = state.get("consensus", {})
+            final = state.get("final_action", {})
+            rec_action = consensus.get("recommended_action", {})
+
+            signal_str = (
+                rec_action.get("signal", "")
+                or rec_action.get("action", "")
+                or consensus.get("consensus_signal", "HOLD")
+            ).upper()
+            if signal_str not in ("BUY", "SELL", "SHORT", "HOLD"):
+                signal_str = "HOLD"
+            state["recommendation"] = signal_str
+
+            state["confidence"] = float(
+                rec_action.get("confidence", 0)
+                or consensus.get("confidence", 0)
+                or 0
+            )
+
+            state["reasoning"] = str(
+                consensus.get("reasoning", "")
+                or consensus.get("summary", "")
+                or "No reasoning provided."
+            )
+
+            portfolio_decision = state.get("portfolio_decision", {})
+            state["exposure"] = float(
+                portfolio_decision.get("position_size_pct", 0)
+                or portfolio_decision.get("exposure", 0)
+                or 0
+            )
+
+            state["cost_usd"] = state.get("total_llm_cost", 0)
         except Exception as e:
             logger.error(f"Graph execution failed for {ticker}: {e}")
             errors = state.get("errors", [])

@@ -67,6 +67,8 @@ class HealthChecker:
                 url = "https://api.anthropic.com/v1/messages"
             elif provider == "openai":
                 url = "https://api.openai.com/v1/models"
+            elif provider == "grok":
+                url = "https://api.x.ai/v1/models"
             else:
                 url = f"https://api.{provider}.com"
 
@@ -125,17 +127,17 @@ class HealthChecker:
         start = time.monotonic()
         try:
             import os
-            missing: list[str] = []
-            for key in ["ANTHROPIC_API_KEY", "OPENAI_API_KEY"]:
-                if not os.getenv(key, ""):
-                    missing.append(key)
+            grok_key = os.getenv("GROK_API_KEY", "")
+            anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
+            openai_key = os.getenv("OPENAI_API_KEY", "")
 
             latency = (time.monotonic() - start) * 1000
-            if not missing:
+            # Healthy if at least one LLM key is set (Grok-only mode is fine)
+            if grok_key or (anthropic_key and openai_key):
                 return ComponentHealth("api_keys", HealthStatus.HEALTHY, latency)
-            if len(missing) < 2:
-                return ComponentHealth("api_keys", HealthStatus.DEGRADED, latency, f"Missing: {', '.join(missing)}")
-            return ComponentHealth("api_keys", HealthStatus.UNHEALTHY, latency, f"Missing: {', '.join(missing)}")
+            if anthropic_key or openai_key:
+                return ComponentHealth("api_keys", HealthStatus.DEGRADED, latency, "Only one legacy LLM key set; consider setting GROK_API_KEY")
+            return ComponentHealth("api_keys", HealthStatus.UNHEALTHY, latency, "Missing LLM API key: set GROK_API_KEY (or ANTHROPIC_API_KEY + OPENAI_API_KEY)")
         except Exception as e:
             latency = (time.monotonic() - start) * 1000
             return ComponentHealth("api_keys", HealthStatus.UNHEALTHY, latency, str(e))
@@ -144,8 +146,7 @@ class HealthChecker:
         checks = [
             self.check_api_keys(),
             self.check_market_data(),
-            self.check_llm_provider("anthropic"),
-            self.check_llm_provider("openai"),
+            self.check_llm_provider("grok"),
         ]
 
         results = await asyncio.gather(*checks, return_exceptions=True)

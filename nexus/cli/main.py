@@ -63,7 +63,7 @@ def run(
 
     if demo:
         click.echo(click.style("Starting NEXUS demo mode...", fg="cyan", bold=True))
-        tui.run_sync(demo=True)
+        tui.run_sync(ticker=ticker[0] if ticker else "TSLA")
         return
 
     click.echo(click.style("Starting NEXUS...", fg="cyan", bold=True))
@@ -81,16 +81,17 @@ def run(
     async def _run() -> None:
         from nexus.orchestration.graph import TradingGraph
 
-        graph = TradingGraph(config=config)
+        graph = TradingGraph(router=None, config=config)
         if show_ui:
-            await tui.run_with_graph(
-                graph=graph,
-                tickers=list(ticker),
-                capital=capital,
-            )
+            for tk in ticker:
+                await tui.run_with_graph(
+                    ticker=tk,
+                    graph=graph,
+                    capital=capital,
+                )
         else:
             for tk in ticker:
-                result = await graph.run(ticker=tk, capital=capital)
+                result = await graph.run(ticker=tk, initial_data=None, capital=capital)
                 _print_result(tk, result)
 
     asyncio.run(_run())
@@ -143,17 +144,45 @@ def backtest(
     config = get_config()
 
     async def _backtest() -> None:
-        from nexus.backtest.engine import BacktestEngine
+        from nexus.backtest.engine import BacktestConfig as BTConfig, BacktestEngine
+        from nexus.backtest.strategy import MomentumStrategy
+        from nexus.data.pipeline import DataPipeline
 
-        engine = BacktestEngine(config=config)
-        with click.progressbar(length=100, label="Running backtest") as bar:
-            result = await engine.run(
-                tickers=list(ticker),
-                start_date=start_date.strftime("%Y-%m-%d"),
-                end_date=end_date.strftime("%Y-%m-%d"),
-                initial_capital=capital,
-            )
-            bar.update(100)
+        bt_config = BTConfig(initial_capital=capital, seed=42)
+        engine = BacktestEngine(config=bt_config)
+
+        pipeline = DataPipeline()
+        all_results = []
+
+        for tk in ticker:
+            click.echo(f"  Fetching data for {tk}...")
+            try:
+                df = await pipeline.get_market_data(
+                    tk,
+                    start=start_date,
+                    end=end_date,
+                    include_technicals=True,
+                )
+            except Exception as e:
+                click.echo(click.style(f"  Failed to fetch data for {tk}: {e}", fg="red"))
+                continue
+
+            if df.empty:
+                click.echo(click.style(f"  No data returned for {tk}", fg="yellow"))
+                continue
+
+            strategy = MomentumStrategy()
+
+            import asyncio as _aio
+            result = await _aio.to_thread(engine.run, df, strategy, None)
+            all_results.append((tk, result))
+
+        if not all_results:
+            click.echo(click.style("No backtest results produced.", fg="red"))
+            return
+
+        # Use the last (or only) result for reporting
+        _, result = all_results[-1]
 
         from nexus.reports.backtest import BacktestReport
 
@@ -194,11 +223,11 @@ def analyze(ctx: NexusContext, ticker: tuple[str, ...], depth: str, output: str 
     async def _analyze() -> None:
         from nexus.orchestration.graph import TradingGraph
 
-        graph = TradingGraph(config=config)
+        graph = TradingGraph(router=None, config=config)
 
         for tk in ticker:
             click.echo(f"\nAnalyzing {click.style(tk, fg='cyan', bold=True)}...")
-            result = await graph.run(ticker=tk, capital=0)
+            result = await graph.run(ticker=tk, initial_data=None, capital=0)
             _print_result(tk, result)
 
     asyncio.run(_analyze())

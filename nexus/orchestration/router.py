@@ -11,9 +11,9 @@ logger = get_logger("orchestration.router")
 
 class LLMRouter:
     TIER_CONFIGS: dict[str, dict[str, str]] = {
-        "cheap": {"provider": "groq", "model": "llama-3.3-70b-versatile"},
-        "medium": {"provider": "openai", "model": "gpt-4o"},
-        "expensive": {"provider": "anthropic", "model": "claude-sonnet-4-20250514"},
+        "cheap": {"provider": "grok", "model": "grok-3"},
+        "medium": {"provider": "grok", "model": "grok-3"},
+        "expensive": {"provider": "grok", "model": "grok-3"},
     }
 
     AGENT_TIERS: dict[str, str] = {

@@ -53,6 +53,8 @@ _PRICING: dict[str, tuple[float, float]] = {
     "gpt-4o": (2.50 / 1_000_000, 10.0 / 1_000_000),
     "gpt-4o-mini": (0.15 / 1_000_000, 0.60 / 1_000_000),
     "llama-3.3-70b-versatile": (0.59 / 1_000_000, 0.79 / 1_000_000),
+    "grok-3": (3.0 / 1_000_000, 15.0 / 1_000_000),
+    "grok-2": (2.0 / 1_000_000, 10.0 / 1_000_000),
 }
 
 
@@ -289,6 +291,72 @@ class GroqProvider(BaseLLMProvider):
         )
 
 
+class GrokProvider(BaseLLMProvider):
+    """xAI Grok provider — OpenAI-compatible endpoint at https://api.x.ai/v1."""
+
+    def __init__(
+        self,
+        model: str = "grok-3",
+        max_tokens: int = 4096,
+        temperature: float = 0.1,
+        timeout: int = 60,
+        max_retries: int = 3,
+        api_key: str = "",
+    ) -> None:
+        super().__init__(model, max_tokens, temperature, timeout, max_retries)
+        config = get_config()
+        self._api_key = api_key or getattr(config, "grok_api_key", "")
+        self._base_url = "https://api.x.ai/v1"
+
+    async def generate(self, prompt: str, system: str = "", temperature: float | None = None) -> LLMResponse:
+        start = time.monotonic()
+        headers = {
+            "Authorization": f"Bearer {self._api_key}",
+            "Content-Type": "application/json",
+        }
+        messages: list[dict[str, str]] = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+
+        body: dict[str, Any] = {
+            "model": self.model,
+            "max_tokens": self.max_tokens,
+            "temperature": temperature if temperature is not None else self.temperature,
+            "messages": messages,
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.post(f"{self._base_url}/chat/completions", json=body, headers=headers)
+                if resp.status_code == 429:
+                    raise LLMRateLimitError(f"Grok rate limit: {resp.text}")
+                if resp.status_code != 200:
+                    raise LLMError(f"Grok API error {resp.status_code}: {resp.text}")
+                data = resp.json()
+        except httpx.TimeoutException as e:
+            raise LLMError(f"Grok timeout after {self.timeout}s") from e
+        except (LLMError, LLMRateLimitError):
+            raise
+        except Exception as e:
+            raise LLMError(f"Grok request failed: {e}") from e
+
+        content = data["choices"][0]["message"]["content"]
+        usage = data.get("usage", {})
+        input_tokens = usage.get("prompt_tokens", 0)
+        output_tokens = usage.get("completion_tokens", 0)
+        latency = (time.monotonic() - start) * 1000
+
+        return LLMResponse(
+            content=content,
+            model=self.model,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            latency_ms=latency,
+            cost_usd=_estimate_cost(self.model, input_tokens, output_tokens),
+        )
+
+
 def create_provider(
     provider: str = "anthropic",
     model: str | None = None,
@@ -300,6 +368,8 @@ def create_provider(
         return OpenAIProvider(model=model or "gpt-4o", **kwargs)
     elif provider == "groq":
         return GroqProvider(model=model or "llama-3.3-70b-versatile", **kwargs)
+    elif provider == "grok":
+        return GrokProvider(model=model or "grok-3", **kwargs)
     else:
         raise ValueError(f"Unknown LLM provider: {provider}")
 

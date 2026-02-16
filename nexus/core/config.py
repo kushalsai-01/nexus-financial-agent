@@ -204,6 +204,7 @@ class NexusConfig(BaseSettings):
     anthropic_api_key: str = ""
     openai_api_key: str = ""
     groq_api_key: str = ""
+    grok_api_key: str = ""
     alpaca_api_key: str = ""
     alpaca_api_secret: str = ""
     newsapi_key: str = ""
@@ -275,6 +276,7 @@ def get_config(
         "ANTHROPIC_API_KEY",
         "OPENAI_API_KEY",
         "GROQ_API_KEY",
+        "GROK_API_KEY",
         "ALPACA_API_KEY",
         "ALPACA_API_SECRET",
         "NEWSAPI_KEY",

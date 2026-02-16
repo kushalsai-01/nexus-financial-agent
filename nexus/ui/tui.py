@@ -97,7 +97,7 @@ class TradingTUI:
         self._console.print(make_report_panel(report))
         self._console.print()
 
-    async def run_with_graph(self, ticker: str, graph: Any) -> dict[str, Any]:
+    async def run_with_graph(self, ticker: str, graph: Any, capital: float | None = None) -> dict[str, Any]:
         self._ticker = ticker
         self._start_time = time.monotonic()
         self._running = True
@@ -113,7 +113,7 @@ class TradingTUI:
             try:
                 from nexus.orchestration.graph import TradingGraph
                 if isinstance(graph, TradingGraph):
-                    state = await graph.run(ticker)
+                    state = await graph.run(ticker, initial_data=None, capital=capital)
                     result = dict(state)
                 else:
                     result = {"error": "Invalid graph type"}
