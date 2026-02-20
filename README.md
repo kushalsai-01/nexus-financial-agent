@@ -487,6 +487,4 @@ Built with:
 
 **⭐ Star this repo if you find it useful!**
 
-Made with ❤️ by the NEXUS team
-
 </div>
