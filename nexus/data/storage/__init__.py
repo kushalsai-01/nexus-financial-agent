@@ -8,8 +8,6 @@ from nexus.data.storage.postgres import (
     PriceRecord,
     TradeRecord,
 )
-from nexus.data.storage.timeseries import TimeseriesStorage
-from nexus.data.storage.vector import VectorStorage
 
 __all__ = [
     "Base",
@@ -20,6 +18,16 @@ __all__ = [
     "AgentDecisionRecord",
     "NewsRecord",
     "PostgresStorage",
-    "TimeseriesStorage",
-    "VectorStorage",
 ]
+
+try:
+    from nexus.data.storage.timeseries import TimeseriesStorage
+    __all__.append("TimeseriesStorage")
+except ImportError:
+    TimeseriesStorage = None  # type: ignore[assignment,misc]
+
+try:
+    from nexus.data.storage.vector import VectorStorage
+    __all__.append("VectorStorage")
+except ImportError:
+    VectorStorage = None  # type: ignore[assignment,misc]

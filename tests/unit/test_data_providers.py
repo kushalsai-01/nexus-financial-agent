@@ -51,6 +51,7 @@ class TestMarketDataProvider:
 class TestNewsProvider:
     @pytest.mark.asyncio
     async def test_deduplicate(self) -> None:
+        pytest.importorskip("feedparser", reason="feedparser not installed")
         from nexus.core.types import NewsEvent
 
         events = [
