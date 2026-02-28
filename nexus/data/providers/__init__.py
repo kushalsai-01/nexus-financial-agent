@@ -8,8 +8,16 @@ from nexus.data.providers.base import (
 )
 from nexus.data.providers.fundamentals import FundamentalsProvider
 from nexus.data.providers.market import MarketDataProvider
-from nexus.data.providers.news import NewsProvider
-from nexus.data.providers.social import SocialProvider
+
+try:
+    from nexus.data.providers.news import NewsProvider
+except ImportError:
+    NewsProvider = None  # type: ignore[assignment,misc]
+
+try:
+    from nexus.data.providers.social import SocialProvider
+except ImportError:
+    SocialProvider = None  # type: ignore[assignment,misc]
 
 __all__ = [
     "BaseDataProvider",

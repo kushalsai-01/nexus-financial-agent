@@ -7,19 +7,19 @@ logging:
 
 llm:
   primary:
-    provider: grok
-    model: grok-3
+    provider: gemini
+    model: gemini-2.5-flash
     temperature: 0.1
     max_tokens: 4096
     timeout: 60
     max_retries: 3
   fallback:
-    provider: grok
-    model: grok-3
+    provider: gemini
+    model: gemini-2.5-flash
     temperature: 0.1
     max_tokens: 4096
-    timeout: 60
-    max_retries: 3
+    timeout: 120
+    max_retries: 2
 
 data:
   market:

@@ -1,0 +1,35 @@
+# ─── NEXUS — HuggingFace Spaces requirements ─────────────────────
+# This is the minimal dependency set for running the Streamlit dashboard
+# in demo mode on HuggingFace free CPU tier (16 GB RAM, no GPU).
+# Heavy ML deps (torch, transformers) are excluded by default.
+# ──────────────────────────────────────────────────────────────────
+
+# Core
+pydantic>=2.5,<3
+pydantic-settings>=2.1,<3
+pyyaml>=6.0,<7
+python-dotenv>=1.0,<2
+httpx>=0.25,<1
+
+# Data
+pandas>=2.1,<3
+numpy>=1.26,<3
+
+# Dashboard
+streamlit>=1.29,<2
+plotly>=5.18,<6
+
+# CLI (needed for module imports even in dashboard mode)
+click>=8.1,<9
+
+# Rich TUI (imported by nexus.ui)
+rich>=13.7,<14
+
+# Templating (reports)
+jinja2>=3.1,<4
+
+# Technical analysis (lightweight)
+ta>=0.11,<1
+
+# Monitoring / metrics
+prometheus-client>=0.19,<1

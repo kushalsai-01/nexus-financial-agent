@@ -153,14 +153,17 @@ class FeatureEngineer:
         else:
             return df
 
-        df["day_of_week"] = ts.dayofweek
-        df["day_of_month"] = ts.day
-        df["month"] = ts.month
-        df["quarter"] = ts.quarter
-        df["is_month_start"] = ts.is_month_start.astype(int)
-        df["is_month_end"] = ts.is_month_end.astype(int)
-        df["is_quarter_start"] = ts.is_quarter_start.astype(int)
-        df["is_quarter_end"] = ts.is_quarter_end.astype(int)
+        # Use .dt accessor for Series, direct access for DatetimeIndex
+        dt = ts.dt if hasattr(ts, "dt") else ts
+
+        df["day_of_week"] = dt.dayofweek
+        df["day_of_month"] = dt.day
+        df["month"] = dt.month
+        df["quarter"] = dt.quarter
+        df["is_month_start"] = dt.is_month_start.astype(int)
+        df["is_month_end"] = dt.is_month_end.astype(int)
+        df["is_quarter_start"] = dt.is_quarter_start.astype(int)
+        df["is_quarter_end"] = dt.is_quarter_end.astype(int)
 
         return df
 

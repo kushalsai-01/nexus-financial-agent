@@ -67,7 +67,8 @@ class TestNexusConfig:
 
     def test_default_config(self) -> None:
         config = NexusConfig()
-        assert config.env == "development"
+        # conftest sets NEXUS_ENV=test, so pydantic-settings picks that up
+        assert config.env in ("development", "test")
         assert config.logging.level == "INFO"
         assert config.risk.max_position_size_pct == 5.0
 

@@ -355,8 +355,8 @@ def init() -> None:
     default_config = {
         "logging": {"level": "INFO", "log_dir": "logs", "format": "json"},
         "llm": {
-            "primary": {"provider": "grok", "model": "grok-3", "temperature": 0.1, "max_tokens": 4096},
-            "fallback": {"provider": "grok", "model": "grok-3", "temperature": 0.1, "max_tokens": 4096},
+            "primary": {"provider": "gemini", "model": "gemini-2.0-flash", "temperature": 0.1, "max_tokens": 4096},
+            "fallback": {"provider": "ollama", "model": "llama3.1:8b", "temperature": 0.1, "max_tokens": 4096},
         },
         "risk": {
             "max_position_size_pct": 5.0,
@@ -387,10 +387,12 @@ def init() -> None:
     env_example = Path(".env.example")
     if not env_example.exists():
         env_example.write_text(
-            "# Required for LLM (Grok — only key needed for all agents)\n"
-            "GROK_API_KEY=\n"
+            "# Required for LLM (Gemini free tier — only key needed)\n"
+            "# Get a free key at: https://aistudio.google.com/apikey\n"
+            "GEMINI_API_KEY=\n"
             "\n"
-            "# Optional: legacy LLM providers\n"
+            "# Optional: other LLM providers\n"
+            "GROK_API_KEY=\n"
             "ANTHROPIC_API_KEY=\n"
             "OPENAI_API_KEY=\n"
             "\n"
@@ -411,7 +413,7 @@ def init() -> None:
 
     click.echo(click.style("NEXUS project initialized!", fg="green", bold=True))
     click.echo(f"  Config:  {config_path}")
-    click.echo(f"  Next:    Copy .env.example to .env and set GROK_API_KEY")
+    click.echo(f"  Next:    Copy .env.example to .env and set GEMINI_API_KEY")
 
 
 if __name__ == "__main__":

@@ -1,3 +1,20 @@
+---
+title: NEXUS Financial Agent
+emoji: 📊
+colorFrom: blue
+colorTo: cyan
+sdk: streamlit
+sdk_version: "1.41.0"
+app_file: app.py
+pinned: false
+license: mit
+tags:
+  - multi-agent
+  - trading
+  - finance
+  - langgraph
+---
+
 # NEXUS — Autonomous Multi-Agent Hedge Fund
 
 <div align="center">

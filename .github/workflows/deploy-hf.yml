@@ -1,0 +1,28 @@
+# Deploy NEXUS to HuggingFace Spaces on every push to main.
+# Requires HF_TOKEN secret set in GitHub repo settings.
+
+name: Deploy to HuggingFace Spaces
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Push to HuggingFace Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git remote add hf https://huggingface.co/spaces/${{ github.repository_owner }}/nexus-financial-agent || true
+          git remote set-url hf https://huggingface.co/spaces/${{ github.repository_owner }}/nexus-financial-agent
+          # Use token for auth
+          git -c http.extraHeader="Authorization: Bearer ${HF_TOKEN}" push hf main --force

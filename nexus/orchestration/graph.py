@@ -35,6 +35,9 @@ from nexus.orchestration.state import (
 
 logger = get_logger("orchestration.graph")
 
+# Cooldown between sequential LLM calls to stay under free-tier RPM
+_CALL_COOLDOWN = 7  # seconds between API calls
+
 
 class TradingGraph:
     def __init__(self, router: LLMRouter | None = None, config: Any = None) -> None:
@@ -81,24 +84,64 @@ class TradingGraph:
                 from nexus.data.pipeline import DataPipeline
                 pipeline = DataPipeline()
                 full = await pipeline.get_full_analysis(ticker, lookback_days=90)
-                state["market_data"] = full.get("market_data", state.get("market_data", {}))
+                md = full.get("market_data", {})
+                state["market_data"] = md
                 state["news"] = full.get("news", state.get("news", []))
                 state["fundamentals"] = full.get("fundamentals", state.get("fundamentals", {}))
                 state["social_data"] = full.get("social", state.get("social_data", {}))
-                state["technical_indicators"] = full.get("market_data", {}).get("technical_summary", {})
-                state["current_price"] = full.get("market_data", {}).get("latest_close", 0) or state.get("current_price", 0)
+                state["technical_indicators"] = md.get("technical_summary", {})
+                latest_close = md.get("latest_close", 0)
+                state["current_price"] = latest_close or state.get("current_price", 0)
+
+                # Also fetch raw bars for price-change calculations
+                try:
+                    from datetime import datetime, timedelta
+                    bars_df = await pipeline.get_market_data(
+                        ticker,
+                        start=datetime.now() - timedelta(days=90),
+                        end=datetime.now(),
+                        include_technicals=False,
+                        include_features=False,
+                    )
+                    if not bars_df.empty and "close" in bars_df.columns:
+                        closes = bars_df["close"].values
+                        volumes = bars_df["volume"].values if "volume" in bars_df.columns else []
+                        n = len(closes)
+                        c = float(closes[-1]) if n > 0 else 0
+                        state["current_price"] = c or state["current_price"]
+                        state["market_data"]["close"] = c
+                        state["market_data"]["latest_close"] = c
+                        state["market_data"]["change_1d"] = round((c / float(closes[-2]) - 1) * 100, 4) if n >= 2 else 0
+                        state["market_data"]["change_5d"] = round((c / float(closes[-6]) - 1) * 100, 4) if n >= 6 else 0
+                        state["market_data"]["change_20d"] = round((c / float(closes[-21]) - 1) * 100, 4) if n >= 21 else 0
+                        state["market_data"]["high_52w"] = float(closes[-min(n, 252):].max())
+                        state["market_data"]["low_52w"] = float(closes[-min(n, 252):].min())
+                        state["market_data"]["data_points"] = n
+                        if len(volumes) >= 20:
+                            avg_vol = float(volumes[-20:].mean())
+                            state["market_data"]["volume_profile"] = {
+                                "avg_20d": int(avg_vol),
+                                "relative": round(float(volumes[-1]) / avg_vol, 4) if avg_vol > 0 else 1.0,
+                            }
+                        logger.info(f"Enriched market data for {ticker}: price=${c:.2f}, bars={n}")
+                except Exception as bars_err:
+                    logger.warning(f"Could not enrich bars data: {bars_err}")
         except Exception as e:
             logger.warning(f"Data pipeline failed for {ticker}, continuing with existing state: {e}")
 
         try:
             state = await self._node_fetch_data(state)
             state = await self._node_process_parallel(state)
+            await asyncio.sleep(_CALL_COOLDOWN)
             state = await self._node_debate_parallel(state)
+            await asyncio.sleep(_CALL_COOLDOWN)
             state = await self._node_coordinate(state)
+            await asyncio.sleep(_CALL_COOLDOWN)
             state = await self._node_risk_check(state)
 
             risk_decision = state.get("risk_assessment", {}).get("decision", "VETO")
             if risk_decision == "APPROVE":
+                await asyncio.sleep(_CALL_COOLDOWN)
                 state = await self._node_execute(state)
 
             state = await self._node_log_decision(state)
@@ -167,26 +210,25 @@ class TradingGraph:
         logger.info(f"Node: process_parallel for {state['ticker']}")
 
         research_agents = ["technical", "fundamental", "sentiment", "macro", "event", "quantitative"]
-        tasks = []
+
+        # Sequential execution with cooldown to stay under Gemini free-tier RPM
         for name in research_agents:
             agent = self._agents[name]
             agent_data = self._prepare_agent_data(name, state)
-            tasks.append(agent.execute(state["ticker"], agent_data))
-
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        for i, result in enumerate(results):
-            if isinstance(result, Exception):
-                logger.error(f"Agent {research_agents[i]} failed: {result}")
+            try:
+                result = await agent.execute(state["ticker"], agent_data)
+                if isinstance(result, AgentOutput):
+                    state = update_state_with_output(state, result)
+                    if result.signal:
+                        signals = state.get("research_signals", [])
+                        signals.append(result.signal.model_dump())
+                        state["research_signals"] = signals
+            except Exception as exc:
+                logger.error(f"Agent {name} failed: {exc}")
                 errors = state.get("errors", [])
-                errors.append(f"{research_agents[i]}: {str(result)}")
+                errors.append(f"{name}: {str(exc)}")
                 state["errors"] = errors
-            elif isinstance(result, AgentOutput):
-                state = update_state_with_output(state, result)
-                if result.signal:
-                    signals = state.get("research_signals", [])
-                    signals.append(result.signal.model_dump())
-                    state["research_signals"] = signals
+            await asyncio.sleep(_CALL_COOLDOWN)
 
         return state
 
@@ -204,10 +246,10 @@ class TradingGraph:
             "position_context": state.get("portfolio", {}),
         }
 
-        bull_task = self._agents["bull"].execute(state["ticker"], debate_data)
-        bear_task = self._agents["bear"].execute(state["ticker"], debate_data)
-
-        bull_result, bear_result = await asyncio.gather(bull_task, bear_task, return_exceptions=True)
+        # Sequential to respect rate limits
+        bull_result = await self._agents["bull"].execute(state["ticker"], debate_data)
+        await asyncio.sleep(_CALL_COOLDOWN)
+        bear_result = await self._agents["bear"].execute(state["ticker"], debate_data)
 
         if isinstance(bull_result, AgentOutput):
             state = update_state_with_output(state, bull_result)
@@ -298,6 +340,8 @@ class TradingGraph:
         if isinstance(p_output, AgentOutput):
             state = update_state_with_output(state, p_output)
             state["portfolio_decision"] = p_output.parsed_output
+
+        await asyncio.sleep(_CALL_COOLDOWN)
 
         exec_agent = self._agents["execution"]
         e_output = await exec_agent.execute(state["ticker"], {

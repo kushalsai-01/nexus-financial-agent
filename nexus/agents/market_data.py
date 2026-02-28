@@ -16,9 +16,15 @@ class MarketDataAgent(BaseAgent):
         price_data = data.get("price_data", {})
         volume = data.get("volume_profile", {})
 
+        current_price = (
+            price_data.get("close", 0)
+            or price_data.get("latest_close", 0)
+            or price_data.get("current_price", 0)
+        )
+
         summary = {
             "ticker": ticker,
-            "current_price": price_data.get("close", 0),
+            "current_price": current_price,
             "change_1d": price_data.get("change_1d", 0),
             "change_5d": price_data.get("change_5d", 0),
             "change_20d": price_data.get("change_20d", 0),
@@ -26,7 +32,7 @@ class MarketDataAgent(BaseAgent):
             "relative_volume": volume.get("relative", 1.0),
             "high_52w": price_data.get("high_52w", 0),
             "low_52w": price_data.get("low_52w", 0),
-            "data_points": price_data.get("data_points", 0),
+            "data_points": price_data.get("data_points", 0) or price_data.get("bars_count", 0),
         }
 
         return AgentOutput(

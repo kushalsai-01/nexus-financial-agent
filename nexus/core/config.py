@@ -205,6 +205,7 @@ class NexusConfig(BaseSettings):
     openai_api_key: str = ""
     groq_api_key: str = ""
     grok_api_key: str = ""
+    gemini_api_key: str = ""
     alpaca_api_key: str = ""
     alpaca_api_secret: str = ""
     newsapi_key: str = ""
@@ -272,11 +273,22 @@ def get_config(
     yaml_data = _load_yaml_config(cfg_path, environment)
     yaml_data["env"] = environment
 
+    # Normalize agents.teams from dict format (YAML) to list[AgentTeamConfig]
+    agents_cfg = yaml_data.get("agents", {})
+    if isinstance(agents_cfg, dict):
+        teams_raw = agents_cfg.get("teams", [])
+        if isinstance(teams_raw, dict):
+            agents_cfg["teams"] = [
+                {"name": name, "agents": members}
+                for name, members in teams_raw.items()
+            ]
+
     for key in [
         "ANTHROPIC_API_KEY",
         "OPENAI_API_KEY",
         "GROQ_API_KEY",
         "GROK_API_KEY",
+        "GEMINI_API_KEY",
         "ALPACA_API_KEY",
         "ALPACA_API_SECRET",
         "NEWSAPI_KEY",

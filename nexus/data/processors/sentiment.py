@@ -4,8 +4,13 @@ import asyncio
 from typing import Any
 
 import numpy as np
-import torch
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+try:
+    import torch
+    from transformers import AutoModelForSequenceClassification, AutoTokenizer
+    _HAS_TORCH = True
+except ImportError:
+    _HAS_TORCH = False
 
 from nexus.core.logging import get_logger
 from nexus.core.types import Sentiment
@@ -18,12 +23,20 @@ _MODEL_NAME = "ProsusAI/finbert"
 class SentimentAnalyzer:
     def __init__(self, model_name: str = _MODEL_NAME, device: str | None = None) -> None:
         self._model_name = model_name
-        self._device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        self._tokenizer: AutoTokenizer | None = None
-        self._model: AutoModelForSequenceClassification | None = None
+        if _HAS_TORCH:
+            self._device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        else:
+            self._device = device or "cpu"
+        self._tokenizer: Any = None
+        self._model: Any = None
         self._labels = ["positive", "negative", "neutral"]
 
     def _load_model(self) -> None:
+        if not _HAS_TORCH:
+            raise ImportError(
+                "torch and transformers are required for SentimentAnalyzer. "
+                "Install them with: pip install torch transformers"
+            )
         if self._tokenizer is None:
             logger.info(f"Loading sentiment model: {self._model_name}")
             self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)

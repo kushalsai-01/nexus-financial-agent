@@ -60,7 +60,7 @@ class HealthChecker:
             latency = (time.monotonic() - start) * 1000
             return ComponentHealth("database", HealthStatus.UNHEALTHY, latency, str(e))
 
-    async def check_llm_provider(self, provider: str = "anthropic") -> ComponentHealth:
+    async def check_llm_provider(self, provider: str = "gemini") -> ComponentHealth:
         start = time.monotonic()
         try:
             if provider == "anthropic":
@@ -69,6 +69,10 @@ class HealthChecker:
                 url = "https://api.openai.com/v1/models"
             elif provider == "grok":
                 url = "https://api.x.ai/v1/models"
+            elif provider == "gemini":
+                url = "https://generativelanguage.googleapis.com/v1beta/models"
+            elif provider == "ollama":
+                url = "http://localhost:11434/api/tags"
             else:
                 url = f"https://api.{provider}.com"
 
@@ -127,17 +131,18 @@ class HealthChecker:
         start = time.monotonic()
         try:
             import os
+            gemini_key = os.getenv("GEMINI_API_KEY", "")
             grok_key = os.getenv("GROK_API_KEY", "") or os.getenv("XAI_API_KEY", "")
             anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
             openai_key = os.getenv("OPENAI_API_KEY", "")
 
             latency = (time.monotonic() - start) * 1000
-            # Healthy if at least one LLM key is set (Grok-only mode is fine)
-            if grok_key or anthropic_key or openai_key:
+            # Healthy if at least one LLM key is set (Gemini free tier is recommended)
+            if gemini_key or grok_key or anthropic_key or openai_key:
                 return ComponentHealth("api_keys", HealthStatus.HEALTHY, latency)
             return ComponentHealth(
                 "api_keys", HealthStatus.UNHEALTHY, latency,
-                "No LLM API key set. Set GROK_API_KEY (recommended), ANTHROPIC_API_KEY, or OPENAI_API_KEY.",
+                "No LLM API key set. Set GEMINI_API_KEY (free — recommended), GROK_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY.",
             )
         except Exception as e:
             latency = (time.monotonic() - start) * 1000
@@ -147,7 +152,7 @@ class HealthChecker:
         checks = [
             self.check_api_keys(),
             self.check_market_data(),
-            self.check_llm_provider("grok"),
+            self.check_llm_provider("gemini"),
         ]
 
         results = await asyncio.gather(*checks, return_exceptions=True)

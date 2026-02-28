@@ -41,7 +41,7 @@ class BaseAgent(ABC):
         name: str,
         agent_type: str,
         provider: BaseLLMProvider | None = None,
-        timeout: int = 120,
+        timeout: int = 300,
     ) -> None:
         self.name = name
         self.agent_type = agent_type

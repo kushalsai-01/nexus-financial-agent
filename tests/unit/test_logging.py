@@ -45,19 +45,21 @@ class TestJSONFormatter:
         output = formatter.format(record)
         data = json.loads(output)
         assert "exception" in data
-        assert "ValueError" in data["exception"]
+        assert data["exception"]["type"] == "ValueError"
 
 
 class TestNexusLogger:
     def test_logger_creation(self) -> None:
-        logger = NexusLogger("test_module")
-        assert logger._name == "test_module"
+        logger = NexusLogger("test_module_create")
+        assert logger._logger.name == "test_module_create"
 
     def test_logger_with_data(self) -> None:
-        logger = NexusLogger("test_module")
+        logger = NexusLogger("test_module_data")
         child = logger.with_data(request_id="abc123", ticker="AAPL")
-        assert child._extra_data["request_id"] == "abc123"
-        assert child._extra_data["ticker"] == "AAPL"
+        # with_data returns a wrapper whose _logger is a LoggerAdapter
+        extra = child._logger.extra["extra_data"]
+        assert extra["request_id"] == "abc123"
+        assert extra["ticker"] == "AAPL"
 
 
 class TestGetLogger:

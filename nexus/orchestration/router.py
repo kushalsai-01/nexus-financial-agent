@@ -11,9 +11,9 @@ logger = get_logger("orchestration.router")
 
 class LLMRouter:
     TIER_CONFIGS: dict[str, dict[str, str]] = {
-        "cheap": {"provider": "grok", "model": "grok-3"},
-        "medium": {"provider": "grok", "model": "grok-3"},
-        "expensive": {"provider": "grok", "model": "grok-3"},
+        "cheap": {"provider": "gemini", "model": "gemini-2.5-flash"},
+        "medium": {"provider": "gemini", "model": "gemini-2.5-flash"},
+        "expensive": {"provider": "gemini", "model": "gemini-2.5-flash"},
     }
 
     AGENT_TIERS: dict[str, str] = {
@@ -48,6 +48,16 @@ class LLMRouter:
             model = override.get("model", tier_cfg["model"])
 
             # Fail-fast when the required API key is missing
+            if provider_name == "gemini" and not getattr(config, "gemini_api_key", ""):
+                import os
+                if not os.getenv("GEMINI_API_KEY", ""):
+                    logger.error(
+                        f"GEMINI_API_KEY is not set — "
+                        f"cannot initialise {tier} tier. "
+                        f"Get a free key at https://aistudio.google.com/apikey "
+                        f"and add it to your .env file."
+                    )
+                    continue
             if provider_name == "grok" and not getattr(config, "grok_api_key", ""):
                 logger.error(
                     f"GROK_API_KEY (or XAI_API_KEY) is not set — "

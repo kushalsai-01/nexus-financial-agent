@@ -11,12 +11,24 @@ from nexus.core.exceptions import DataFetchError
 from nexus.core.logging import get_logger
 from nexus.core.types import Fundamental, MarketData, NewsEvent, TimeFrame
 from nexus.data.processors.features import FeatureEngineer
-from nexus.data.processors.sentiment import SentimentAnalyzer
 from nexus.data.processors.technical import TechnicalAnalyzer
+
+try:
+    from nexus.data.processors.sentiment import SentimentAnalyzer
+except ImportError:
+    SentimentAnalyzer = None  # type: ignore[assignment,misc]
 from nexus.data.providers.fundamentals import FundamentalsProvider
 from nexus.data.providers.market import MarketDataProvider
-from nexus.data.providers.news import NewsProvider
-from nexus.data.providers.social import SocialProvider
+
+try:
+    from nexus.data.providers.news import NewsProvider
+except ImportError:
+    NewsProvider = None  # type: ignore[assignment,misc]
+
+try:
+    from nexus.data.providers.social import SocialProvider
+except ImportError:
+    SocialProvider = None  # type: ignore[assignment,misc]
 
 logger = get_logger("data.pipeline")
 
@@ -25,14 +37,19 @@ class DataPipeline:
     def __init__(self) -> None:
         self._config = get_config()
         self._market = MarketDataProvider()
-        self._news = NewsProvider()
+        self._news = NewsProvider() if NewsProvider is not None else None
         self._fundamentals = FundamentalsProvider()
-        self._social = SocialProvider()
+        self._social = SocialProvider() if SocialProvider is not None else None
         self._technical = TechnicalAnalyzer()
         self._features = FeatureEngineer()
         self._sentiment: SentimentAnalyzer | None = None
 
     def _get_sentiment_analyzer(self) -> SentimentAnalyzer:
+        if SentimentAnalyzer is None:
+            raise ImportError(
+                "SentimentAnalyzer requires torch and transformers. "
+                "Install them with: pip install torch transformers"
+            )
         if self._sentiment is None:
             self._sentiment = SentimentAnalyzer()
         return self._sentiment
@@ -89,6 +106,9 @@ class DataPipeline:
         max_results: int = 50,
         include_sentiment: bool = True,
     ) -> list[NewsEvent]:
+        if self._news is None:
+            logger.warning("NewsProvider unavailable (feedparser not installed)")
+            return []
         news = await self._news.fetch_news(
             query=query, tickers=tickers, max_results=max_results
         )
@@ -116,6 +136,9 @@ class DataPipeline:
     async def get_social_sentiment(
         self, ticker: str, max_posts: int = 50
     ) -> dict[str, Any]:
+        if self._social is None:
+            logger.warning("SocialProvider unavailable (praw not installed)")
+            return {}
         social_summary = await self._social.fetch_sentiment_summary(
             ticker, max_posts
         )
@@ -198,13 +221,16 @@ class DataPipeline:
         return analysis
 
     async def health_check(self) -> dict[str, bool]:
-        checks = await asyncio.gather(
+        async def _false() -> bool:
+            return False
+
+        health_tasks = [
             self._market.health_check(),
-            self._news.health_check(),
+            self._news.health_check() if self._news else _false(),
             self._fundamentals.health_check(),
-            self._social.health_check(),
-            return_exceptions=True,
-        )
+            self._social.health_check() if self._social else _false(),
+        ]
+        checks = await asyncio.gather(*health_tasks, return_exceptions=True)
 
         return {
             "market": checks[0] if isinstance(checks[0], bool) else False,
